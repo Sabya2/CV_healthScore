@@ -1046,13 +1046,14 @@ def score_cimt(
 
 
 def score_wr_peak(sex: str, observed_value: float, age: float, refs: dict) -> dict:
-    ref_df = get_reference_df(refs, metric="wr_peak", sex=sex, reference_type="age")
+    ref_df = get_reference_df(refs = refs, metric="wr_peak", sex=sex, reference_type="age")
     result = lms_score(
         value=observed_value,
         x=age,
         ref_df=ref_df,
         x_col="Age",
     )
+    print('score wr')
     result.update({
         "metric": "wr_peak",
         "sex": sex,
@@ -1090,13 +1091,12 @@ def score_measurement(
             height=height,
         )
     
-    if metric == "wrPeak":
-        return score_cimt(
+    if metric == "wr_peak":
+        return score_wr_peak(
             sex=sex,
             observed_value=observed_value,
             refs=refs,
             age=age,
-            height=height,
         )
 
     raise ValueError(f"Unsupported metric: {metric}")

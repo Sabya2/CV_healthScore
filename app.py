@@ -2,7 +2,9 @@
 import streamlit as st
 
 from features_utils import (
+
     render_measurement_inputs,
+    render_star_plot, 
     render_sleep_score,
     render_bp_score,
     render_bmi_score,
@@ -30,9 +32,9 @@ REFERENCE_PATHS = {
         },
     },
 
-    "wrPeak": {
+    "wr_peak": {
         "boys": {'age':"reference_values/WR_peak_kg_boys_lms.csv"},
-        "girls":{'age': "reference_values/WR_peak_kg_girls_lms.csv"},
+        "girls":{'age':"reference_values/WR_peak_kg_girls_lms.csv"},
     },
 }
 
@@ -59,9 +61,21 @@ def main():
     st.set_page_config(page_title="Health Score Demo", layout="wide")
     st.title("Health Score Demo")
 
+    if "score" not in st.session_state:
+        st.session_state.score = {}
+
     render_measurement_inputs()
     st.divider()
     render_scores(REFERENCE_PATHS)
+    # st.session_state.score
+
+    profile_summary = st.checkbox(
+                "Show full summary",
+                value=False,
+                key="profile_summary"
+            )
+    if profile_summary:
+        render_star_plot(st.session_state.score)
 
 
 if __name__ == "__main__":

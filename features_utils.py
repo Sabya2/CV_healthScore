@@ -1,5 +1,8 @@
 import streamlit as st
 import pandas as pd
+import math
+import plotly.graph_objects as go
+import streamlit as st
 
 from utils import (
     get_sleep_score_json,
@@ -21,16 +24,123 @@ def init_measurement_state():
         "diastolic_bp": 70.0,
         "treated": False,
         "vo2_value": 45.0,
-        "wr_peak_value": 0.380,
-        "cimt_value": 0.380,
+        "wr_peak_value": 0.50,
+        "cimt_value": 0.50,
     }
 
     for key, value in defaults.items():
         if key not in st.session_state:
             st.session_state[key] = value
 
-
 def render_measurement_inputs():
+    init_measurement_state()
+    col1, col2, col3, col4 = st.columns(4, border = True, gap = 'xxsmall')
+    with col1:
+        sex = st.selectbox(
+            "Sex",
+            ["boys", "girls"],
+            index=0 if st.session_state.sex == "boys" else 1,
+            key="input_sex"
+        )
+        age = st.number_input(
+            "Age (years)",
+            min_value=0.0,
+            max_value=25.0,
+            value=float(st.session_state.age),
+            step=0.1,
+            key="input_age"
+        )
+        height_cm = st.number_input(
+            "Height (cm)",
+            min_value=30.0,
+            max_value=250.0,
+            value=float(st.session_state.height_cm),
+            step=0.1,
+            key="input_height"
+        )
+    with col2:
+        weight_kg = st.number_input(
+            "Weight (kg)",
+            min_value=1.0,
+            max_value=300.0,
+            value=float(st.session_state.weight_kg),
+            step=0.1,
+            key="input_weight"
+        )
+        sleep_hours = st.number_input(
+            "Sleep hours",
+            min_value=0.0,
+            max_value=24.0,
+            value=float(st.session_state.sleep_hours),
+            step=0.1,
+            key="input_sleep"
+        )
+    with col3:
+        systolic_bp = st.number_input(
+            "Systolic BP",
+            min_value=40.0,
+            max_value=250.0,
+            value=float(st.session_state.systolic_bp),
+            step=1.0,
+            key="input_sys"
+        )
+        diastolic_bp = st.number_input(
+            "Diastolic BP",
+            min_value=20.0,
+            max_value=150.0,
+            value=float(st.session_state.diastolic_bp),
+            step=1.0,
+            key="input_dia"
+        )
+        treated = st.checkbox(
+            "BP Treated",
+            value=bool(st.session_state.treated),
+            key="input_treated"
+        )
+    with col4:
+        vo2_value = st.number_input(
+            "Observed VO2peak",
+            min_value=0.1,
+            max_value=100.0,
+            value=float(st.session_state.vo2_value),
+            step=0.1,
+            key="input_vo2"
+        )
+        cimt_value = st.number_input(
+            "Observed cIMT",
+            min_value=0.001,
+            max_value=2.0,
+            value=float(st.session_state.cimt_value),
+            step=0.001,
+            format="%.3f",
+            key="input_cimt"
+        )
+        wr_peak_value = st.number_input(
+            "Observed WR peak/kg",
+            min_value=0.38,
+            max_value=6.0,
+            value=float(st.session_state.wr_peak_value),
+            step=0.01,
+            format="%.2f",
+            key="input_wr_peak"
+        )
+
+    st.session_state.sex = sex
+    st.session_state.age = age
+    st.session_state.height_cm = height_cm
+    st.session_state.weight_kg = weight_kg
+    st.session_state.sleep_hours = sleep_hours
+    st.session_state.treated = treated
+    st.session_state.systolic_bp = systolic_bp
+    st.session_state.diastolic_bp = diastolic_bp
+    st.session_state.vo2_value = vo2_value
+    st.session_state.cimt_value = cimt_value
+    st.session_state.wr_peak_value = wr_peak_value
+
+    st.success("Measurements saved to session state.")
+
+
+def _render_measurement_inputs():
     init_measurement_state()
 
     with st.form("shared_measurement_inputs"):
@@ -134,17 +244,6 @@ def render_measurement_inputs():
                 format="%.3f",
                 key="input_cimt"
             )
-            # wr_peak_value = st.number_input(
-            #     "Observed wr peak (get it checked fro min and max)",
-            #     min_value=0.001,
-            #     max_value=2.0,
-            #     value=float(st.session_state.wr_peak_value),
-            #     step=0.001,
-            #     format="%.3f",
-            #     key="input_wr peak"
-            # )
-
-        
 
         submitted = st.form_submit_button("Save Measurements")
 
@@ -162,6 +261,79 @@ def render_measurement_inputs():
         st.session_state.wr_peak_value = wr_peak_value
 
         st.success("Measurements saved to session state.")
+    
+
+
+
+
+def z_to_percentile(z):
+    return 100 * (0.5 * (1 + math.erf(z / math.sqrt(2))))
+
+
+def render_star_plot(score_dict):
+    plot_scores = {}
+
+    if "sleep_score" in score_dict:
+        plot_scores["Sleep"] = score_dict["sleep_score"]
+
+    if "bp_score" in score_dict:
+        plot_scores["Blood Pressure"] = score_dict["bp_score"]
+
+    if "bmi_score" in score_dict:
+        plot_scores["BMI"] = score_dict["bmi_score"]
+
+    if "vo2_score" in score_dict:
+        plot_scores["VO2 Peak"] = z_to_percentile(score_dict["vo2_score"])
+
+    if "wr_score" in score_dict:
+        plot_scores["WR Peak/kg"] = z_to_percentile(score_dict["wr_score"])
+
+    if "cimt_score" in score_dict:
+        plot_scores["cIMT"] = 100 - z_to_percentile(score_dict["cimt_score"])
+
+    categories = list(plot_scores.keys())
+    values = list(plot_scores.values())
+
+    if not categories:
+        st.warning("No scores available for star plot.")
+        return
+
+    categories += [categories[0]]
+    values += [values[0]]
+
+    fig = go.Figure()
+
+    fig.add_trace(go.Scatterpolar(
+        r=values,
+        theta=categories,
+        fill="toself",
+        name="Patient profile",
+        line=dict(color="lightgreen", width=3),
+        fillcolor="rgba(10, 107, 190, 0.25)"
+    ))
+
+    fig.update_layout(
+        polar=dict(
+            radialaxis=dict(
+                visible=True,
+                range=[0, 100],
+                tickfont=dict(color="orange")
+            ),
+            angularaxis=dict(
+                tickfont=dict(color="orange")
+            )
+        ),
+        showlegend=False,
+        title="Cardiovascular Health Star Plot",
+        title_font=dict(color="white"),
+        font=dict(color="orange"),
+        height=600
+    )
+
+    st.plotly_chart(fig, use_container_width=True)
+
+
+
 
 
 def render_sleep_score(refs):
@@ -180,32 +352,21 @@ def render_sleep_score(refs):
                 sleep_hours=st.session_state.sleep_hours
             )
 
-            st.success(f"Sleep score: {result['score']}")
             st.markdown(
-                f"<h1 style='text-align:center; color:green;'>Sleep Score: {result['score']}</h1>",
+                f"<h3 style='text-align:center; color:green;'>Sleep Score: {result['score']}</h1>",
                 unsafe_allow_html=True
             )
+            st.session_state.score['sleep_score'] = result['score']
 
-            col1, col2 = st.columns(2)
+            c1, c2 = st.columns([2,0.1])
 
-            with col1:
-                st.write("### Input")
-                st.write(f"**Sex:** {result['sex']}")
-                st.write(f"**Age:** {result['age']}")
-                st.write(f"**Sleep hours:** {result['sleep_hours']}")
-
-            with col2:
+            with c1:
                 st.write("### Reference")
                 st.write(f"**Age group:** {result['age_group']}")
                 st.write(f"**Mean (h):** {result['mean_h']}")
                 st.write(f"**SD (h):** {result['sd_h']}")
                 st.write(f"**Upper cut-off:** {result['upper_cutoff']}")
                 st.write(f"**Lower cut-off:** {result['lower_cutoff']}")
-
-            # if "band" in result:
-            #     st.write(f"**Matched band:** {result['band']}")
-
-            # st.json(result)
 
         except FileNotFoundError:
             st.error(f"JSON file not found: {json_file}")
@@ -230,43 +391,32 @@ def render_bp_score(refs):
                 diastolic_bp=st.session_state.diastolic_bp,
                 treated=st.session_state.treated,
             )
-
+            st.session_state.score['bp_score'] = result['score']
             st.markdown(
-                f"""
-                <div style="text-align:center;">
-                    <h3>Blood Pressure Score</h3>
-                    <h1 style="color:green; font-size:80px;">{result['score']}</h1>
-                </div>
-                """,
+                f"<h3 style='text-align:center; color:green;'>BP Score: {result['score']}</h1>",
                 unsafe_allow_html=True
             )
 
-            c1, c2 = st.columns(2)
+            c1, c2 = st.columns([2,0.1])
 
             with c1:
-                st.subheader("Inputs")
-                st.write(f"**Sex:** {result['inputs']['sex']}")
-                st.write(f"**Age (years):** {result['inputs']['age_years']}")
-                st.write(f"**Height (cm):** {result['inputs']['height_cm']}")
-                st.write(f"**Systolic BP:** {result['inputs']['systolic_bp']}")
-                st.write(f"**Diastolic BP:** {result['inputs']['diastolic_bp']}")
-                st.write(f"**Treated:** {result['treated']}")
-
-            with c2:
                 st.subheader("Component Scores")
                 st.write(f"**Systolic score:** {result['component_scores']['systolic_score']}")
                 st.write(f"**Diastolic score:** {result['component_scores']['diastolic_score']}")
 
-            # st.subheader("Matched Reference Row - Systolic")
-            # st.json(result["reference_rows"]["systolic"])
+                with st.expander("Show matched reference rows", expanded=False):
+                    st.write("Matched Reference Row - Systolic")
+                    st.json(result["reference_rows"]["systolic"])
 
-            # st.subheader("Matched Reference Row - Diastolic")
-            # st.json(result["reference_rows"]["diastolic"])
+                    st.write("Matched Reference Row - Diastolic")
+                    st.json(result["reference_rows"]["diastolic"])
+
 
         except FileNotFoundError:
             st.error(f"JSON file not found: {json_file}")
         except Exception as e:
             st.error(f"Error calculating BP score: {e}")
+
 
 
 def render_bmi_score(refs):
@@ -286,6 +436,7 @@ def render_bmi_score(refs):
             )
 
             score = result["score"]
+            st.session_state.score['bmi_score'] = result['score']
             bmi_value = result["inputs"]["bmi"]
 
             color = "green"
@@ -294,43 +445,38 @@ def render_bmi_score(refs):
             elif score in [30, 0]:
                 color = "red"
 
+           
+
             st.markdown(
                 f"""
                 <div style="text-align:center;">
-                    <h3>BMI Score</h3>
-                    <h1 style="color:{color}; font-size:80px;">{score}</h1>
-                    <h4>BMI: {bmi_value}</h4>
+                    <h3>BMI: {bmi_value}</h3>
+                    <h3 style="color:{color}; font-size:50px;">{score}</h1>
+            
                 </div>
                 """,
                 unsafe_allow_html=True
             )
 
-            c1, c2 = st.columns(2)
-
+            c1, c2 = st.columns([2, 0.1])
             with c1:
-                st.subheader("Inputs")
-                st.write(f"**Sex:** {result['inputs']['sex']}")
-                st.write(f"**Age (years):** {result['inputs']['age_years']}")
-                st.write(f"**Weight (kg):** {result['inputs']['weight_kg']}")
-                st.write(f"**Height (cm):** {result['inputs']['height_cm']}")
-                st.write(f"**BMI:** {result['inputs']['bmi']}")
+                with st.expander("Show matched reference rows", expanded=False):
 
-            with c2:
-                st.subheader("Matched Reference")
-                st.write(f"**Month used:** {result['reference_row']['Month']}")
-                st.write(f"**-3SD:** {result['reference_row']['-3SD']}")
-                st.write(f"**-2SD:** {result['reference_row']['-2SD']}")
-                st.write(f"**-1SD:** {result['reference_row']['-1SD']}")
-                st.write(f"**Median:** {result['reference_row']['Median']}")
-                st.write(f"**1SD:** {result['reference_row']['1SD']}")
-                st.write(f"**2SD:** {result['reference_row']['2SD']}")
-                st.write(f"**3SD:** {result['reference_row']['3SD']}")
+                    st.write(f"**Month used:** {result['reference_row']['Month']}")
+                    st.write(f"**-3SD:** {result['reference_row']['-3SD']}")
+                    st.write(f"**-2SD:** {result['reference_row']['-2SD']}")
+                    st.write(f"**-1SD:** {result['reference_row']['-1SD']}")
+                    st.write(f"**Median:** {result['reference_row']['Median']}")
+                    st.write(f"**1SD:** {result['reference_row']['1SD']}")
+                    st.write(f"**2SD:** {result['reference_row']['2SD']}")
+                    st.write(f"**3SD:** {result['reference_row']['3SD']}")
 
             # st.subheader("Matched Reference Row")
             # st.json(result["reference_row"])
 
         except Exception as e:
             st.error(f"Error calculating BMI score: {e}")
+
 
 
 def render_vo2_score(refs):
@@ -345,39 +491,40 @@ def render_vo2_score(refs):
                 age=st.session_state.age,
                 refs = refs
             )
+            st.write("score or percentile to be sent ?")
+            st.session_state.score['vo2_score'] = result['z_score']
+            # st.session_state.scores["vo2"] = {
+            #         "z_score": result["z_score"],
+            #         "percentile": result["percentile"],
+            #         "percentile_label": result["percentile_label"],
+            #         "observed_value": result["observed_value"],
+            #     }
 
             st.markdown(
                 f"""
                 <div style="text-align:center;">
                     <h3>VO2 Percentile</h3>
-                    <h1 style="color:green; font-size:80px;">{result['percentile_label']}</h1>
+                    <h3 style="color:green; font-size:50px;">{result['percentile_label']}</h3>
                     <h4>Percentile: {result['percentile']:.2f}</h4>
                     <h4>Z-score: {result['z_score']:.3f}</h4>
+
                 </div>
                 """,
                 unsafe_allow_html=True
             )
 
-            c1, c2 = st.columns(2)
+            c1, c2 = st.columns([2, 0.1])
 
             with c1:
-                st.subheader("Inputs")
-                st.write(f"**Sex:** {result['sex']}")
-                st.write(f"**Age (years):** {result['x_value']}")
-                st.write(f"**Observed VO2peak:** {result['observed_value']}")
-
-            with c2:
-                st.subheader("LMS Reference")
-                st.write(f"**L:** {result['L']}")
-                st.write(f"**M:** {result['M']}")
-                st.write(f"**S:** {result['S']}")
-                st.write(f"**Reference type:** {result['reference_type']}")
-
-            # st.subheader("Result")
-            # st.json(result)
+                with st.expander("LMS Reference", expanded=False):
+                    st.write(f"**L:** {result['L']}")
+                    st.write(f"**M:** {result['M']}")
+                    st.write(f"**S:** {result['S']}")
+                    st.write(f"**Reference type:** {result['reference_type']}")
 
         except Exception as e:
             st.error(f"Error calculating VO2 percentile: {e}")
+
 
 
 def render_cimt_score(refs):
@@ -397,14 +544,14 @@ def render_cimt_score(refs):
             age_based = result.get("age_based")
             height_based = result.get("height_based")
 
-            col1, col2 = st.columns(2)
-            with col1:
+
+            with st.expander("Age based score", expanded=False):
                 if age_based:
                     st.markdown(
                         f"""
                         <div style="text-align:center;">
-                            <h3>cIMT Percentile by Age</h3>
-                            <h1 style="color:green; font-size:80px;">{age_based['percentile_label']}</h1>
+                            <h3>CIMT Percentile by Age</h3>
+                            <h3 style="color:green; font-size:50px;">{age_based['percentile_label']}</h3>
                             <h4>Percentile: {age_based['percentile']:.2f}</h4>
                             <h4>Z-score: {age_based['z_score']:.3f}</h4>
                         </div>
@@ -412,56 +559,48 @@ def render_cimt_score(refs):
                         unsafe_allow_html=True
                     )
 
-            with col2:
+            with st.expander("height based score", expanded=False):
                 if height_based:
                     st.markdown(
                         f"""
                         <div style="text-align:center;">
-                            <h3>cIMT Percentile by Height</h3>
-                            <h1 style="color:green; font-size:80px;">{height_based['percentile_label']}</h1>
+                            <h3>CIMT Percentile by Age</h3>
+                            <h3 style="color:green; font-size:50px;">{height_based['percentile_label']}</h3>
                             <h4>Percentile: {height_based['percentile']:.2f}</h4>
                             <h4>Z-score: {height_based['z_score']:.3f}</h4>
+
+
                         </div>
                         """,
                         unsafe_allow_html=True
                     )
+            st.write("score or percentile to be sent for age or height?")
+            st.session_state.score['cimt_score'] = age_based['z_score']
 
-            c1, c2 = st.columns(2)
+            # st.session_state.scores["cimt"] = {
+            #                         "z_score": age_based["z_score"],
+            #                         "percentile": age_based["percentile"],
+            #                         "percentile_label": age_based["percentile_label"],
+            #                         "observed_value": age_based["observed_value"],
+            #                     }
 
+            c1, c2 = st.columns([2,0.1])
             with c1:
-                st.subheader("Inputs")
-                st.write(f"**Sex:** {result['sex']}")
-                st.write(f"**Age (years):** {st.session_state.age}")
-                st.write(f"**Height (cm):** {st.session_state.height_cm}")
-                st.write(f"**Observed cIMT:** {result['observed_value']:.3f}")
-
-            with c2:
                 st.subheader("Summary")
-                if age_based:
+                with st.expander("Age based", expanded=False):
                     st.write(f"**Age-based percentile:** {age_based['percentile']:.2f}")
                     st.write(f"**Age-based label:** {age_based['percentile_label']}")
                     st.write(f"**Age-based z-score:** {age_based['z_score']:.3f}")
-                if height_based:
+                with st.expander("height based", expanded=False):
                     st.write(f"**Height-based percentile:** {height_based['percentile']:.2f}")
                     st.write(f"**Height-based label:** {height_based['percentile_label']}")
                     st.write(f"**Height-based z-score:** {height_based['z_score']:.3f}")
 
-            # if age_based:
-            #     st.subheader("Age-based LMS Reference")
-            #     st.write(f"**L:** {age_based['L']}")
-            #     st.write(f"**M:** {age_based['M']}")
-            #     st.write(f"**S:** {age_based['S']}")
-            #     st.json(age_based)
-
-            # if height_based:
-            #     st.subheader("Height-based LMS Reference")
-            #     st.write(f"**L:** {height_based['L']}")
-            #     st.write(f"**M:** {height_based['M']}")
-            #     st.write(f"**S:** {height_based['S']}")
-            #     st.json(height_based)
+        
 
         except Exception as e:
             st.error(f"Error calculating cIMT percentile: {e}")
+   
 
 
 
@@ -477,6 +616,17 @@ def render_wrPeak_score(refs):
                 age=st.session_state.age,
                 refs=refs,
             )
+            st.write("score or percentile to be sent ?")
+            # st.session_state.score['wr_score'] = result['z_score']
+
+            # st.session_state.scores["wr_peak"] = {
+            #     "z_score": result["z_score"],
+            #     "percentile": result["percentile"],
+            #     "percentile_label": result["percentile_label"],
+            #     "observed_value": result["observed_value"],
+            #     "age": result["x_value"],
+            #     "sex": result["sex"],
+            # }
 
             st.markdown(
                 f"""
@@ -489,6 +639,7 @@ def render_wrPeak_score(refs):
                 """,
                 unsafe_allow_html=True
             )
+            st.session_state.score['wr_score'] = result['z_score']
 
             c1, c2 = st.columns(2)
 
