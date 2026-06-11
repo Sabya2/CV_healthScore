@@ -140,130 +140,6 @@ def render_measurement_inputs():
     st.success("Measurements saved to session state.")
 
 
-def _render_measurement_inputs():
-    init_measurement_state()
-
-    with st.form("shared_measurement_inputs"):
-        st.header("Measurements")
-
-        col1, col2, col3 = st.columns(3,)
-
-        with col1:
-            sex = st.selectbox(
-                "Sex",
-                ["boys", "girls"],
-                index=0 if st.session_state.sex == "boys" else 1,
-                key="input_sex"
-            )
-            age = st.number_input(
-                "Age (years)",
-                min_value=0.0,
-                max_value=25.0,
-                value=float(st.session_state.age),
-                step=0.1,
-                key="input_age"
-            )
-            height_cm = st.number_input(
-                "Height (cm)",
-                min_value=30.0,
-                max_value=250.0,
-                value=float(st.session_state.height_cm),
-                step=0.1,
-                key="input_height"
-            )
-
-        with col2:
-            weight_kg = st.number_input(
-                "Weight (kg)",
-                min_value=1.0,
-                max_value=300.0,
-                value=float(st.session_state.weight_kg),
-                step=0.1,
-                key="input_weight"
-            )
-            sleep_hours = st.number_input(
-                "Sleep hours",
-                min_value=0.0,
-                max_value=24.0,
-                value=float(st.session_state.sleep_hours),
-                step=0.1,
-                key="input_sleep"
-            )
-        
-
-        with col3:
-            systolic_bp = st.number_input(
-                "Systolic BP",
-                min_value=40.0,
-                max_value=250.0,
-                value=float(st.session_state.systolic_bp),
-                step=1.0,
-                key="input_sys"
-            )
-            diastolic_bp = st.number_input(
-                "Diastolic BP",
-                min_value=20.0,
-                max_value=150.0,
-                value=float(st.session_state.diastolic_bp),
-                step=1.0,
-                key="input_dia"
-            )
-
-            treated = st.checkbox(
-                "BP Treated",
-                value=bool(st.session_state.treated),
-                key="input_treated"
-            )
-
-            vo2_value = st.number_input(
-                "Observed VO2peak",
-                min_value=0.1,
-                max_value=100.0,
-                value=float(st.session_state.vo2_value),
-                step=0.1,
-                key="input_vo2"
-            )
-            wr_peak_value = st.number_input(
-                "Observed wr peak (get it checked fro min and max)",
-                min_value=0.001,
-                max_value=2.0,
-                value=float(st.session_state.wr_peak_value),
-                step=0.001,
-                format="%.3f",
-                key="input_wr_peak"
-            )
-
-        c1, c2 = st.columns(2)
-        with c1:
-            cimt_value = st.number_input(
-                "Observed cIMT",
-                min_value=0.001,
-                max_value=2.0,
-                value=float(st.session_state.cimt_value),
-                step=0.001,
-                format="%.3f",
-                key="input_cimt"
-            )
-
-        submitted = st.form_submit_button("Save Measurements")
-
-    if submitted:
-        st.session_state.sex = sex
-        st.session_state.age = age
-        st.session_state.height_cm = height_cm
-        st.session_state.weight_kg = weight_kg
-        st.session_state.sleep_hours = sleep_hours
-        st.session_state.treated = treated
-        st.session_state.systolic_bp = systolic_bp
-        st.session_state.diastolic_bp = diastolic_bp
-        st.session_state.vo2_value = vo2_value
-        st.session_state.cimt_value = cimt_value
-        st.session_state.wr_peak_value = wr_peak_value
-
-        st.success("Measurements saved to session state.")
-    
-
-
 
 
 def z_to_percentile(z):
@@ -358,10 +234,7 @@ def render_sleep_score(refs):
             )
             st.session_state.score['sleep_score'] = result['score']
 
-            c1, c2 = st.columns([2,0.1])
-
-            with c1:
-                st.write("### Reference")
+            with st.expander("Show matched reference rows", expanded=False):
                 st.write(f"**Age group:** {result['age_group']}")
                 st.write(f"**Mean (h):** {result['mean_h']}")
                 st.write(f"**SD (h):** {result['sd_h']}")
@@ -372,6 +245,9 @@ def render_sleep_score(refs):
             st.error(f"JSON file not found: {json_file}")
         except Exception as e:
             st.error(f"Error calculating sleep score: {e}")
+
+
+
 
 
 def render_bp_score(refs):
@@ -397,19 +273,16 @@ def render_bp_score(refs):
                 unsafe_allow_html=True
             )
 
-            c1, c2 = st.columns([2,0.1])
+            
 
-            with c1:
+            with st.expander("Show matched reference rows", expanded=False):
                 st.subheader("Component Scores")
                 st.write(f"**Systolic score:** {result['component_scores']['systolic_score']}")
                 st.write(f"**Diastolic score:** {result['component_scores']['diastolic_score']}")
-
-                with st.expander("Show matched reference rows", expanded=False):
-                    st.write("Matched Reference Row - Systolic")
-                    st.json(result["reference_rows"]["systolic"])
-
-                    st.write("Matched Reference Row - Diastolic")
-                    st.json(result["reference_rows"]["diastolic"])
+                st.write("Matched Reference Row - Systolic")
+                st.json(result["reference_rows"]["systolic"])
+                st.write("Matched Reference Row - Diastolic")
+                st.json(result["reference_rows"]["diastolic"])
 
 
         except FileNotFoundError:
@@ -445,31 +318,22 @@ def render_bmi_score(refs):
             elif score in [30, 0]:
                 color = "red"
 
-           
-
             st.markdown(
-                f"""
-                <div style="text-align:center;">
-                    <h3>BMI: {bmi_value}</h3>
-                    <h3 style="color:{color}; font-size:50px;">{score}</h1>
-            
-                </div>
-                """,
+                f"<h3 style='text-align:center; color:green;'>BMI Score: {score}</h1>",
                 unsafe_allow_html=True
             )
 
-            c1, c2 = st.columns([2, 0.1])
-            with c1:
-                with st.expander("Show matched reference rows", expanded=False):
-
-                    st.write(f"**Month used:** {result['reference_row']['Month']}")
-                    st.write(f"**-3SD:** {result['reference_row']['-3SD']}")
-                    st.write(f"**-2SD:** {result['reference_row']['-2SD']}")
-                    st.write(f"**-1SD:** {result['reference_row']['-1SD']}")
-                    st.write(f"**Median:** {result['reference_row']['Median']}")
-                    st.write(f"**1SD:** {result['reference_row']['1SD']}")
-                    st.write(f"**2SD:** {result['reference_row']['2SD']}")
-                    st.write(f"**3SD:** {result['reference_row']['3SD']}")
+            
+            with st.expander("Show matched reference rows", expanded=False):
+                st.write(f"**BMI:** {bmi_value}")
+                st.write(f"**Month used:** {result['reference_row']['Month']}")
+                st.write(f"**-3SD:** {result['reference_row']['-3SD']}")
+                st.write(f"**-2SD:** {result['reference_row']['-2SD']}")
+                st.write(f"**-1SD:** {result['reference_row']['-1SD']}")
+                st.write(f"**Median:** {result['reference_row']['Median']}")
+                st.write(f"**1SD:** {result['reference_row']['1SD']}")
+                st.write(f"**2SD:** {result['reference_row']['2SD']}")
+                st.write(f"**3SD:** {result['reference_row']['3SD']}")
 
             # st.subheader("Matched Reference Row")
             # st.json(result["reference_row"])
@@ -491,36 +355,20 @@ def render_vo2_score(refs):
                 age=st.session_state.age,
                 refs = refs
             )
-            st.write("score or percentile to be sent ?")
             st.session_state.score['vo2_score'] = result['z_score']
-            # st.session_state.scores["vo2"] = {
-            #         "z_score": result["z_score"],
-            #         "percentile": result["percentile"],
-            #         "percentile_label": result["percentile_label"],
-            #         "observed_value": result["observed_value"],
-            #     }
-
             st.markdown(
-                f"""
-                <div style="text-align:center;">
-                    <h3>VO2 Percentile</h3>
-                    <h3 style="color:green; font-size:50px;">{result['percentile_label']}</h3>
-                    <h4>Percentile: {result['percentile']:.2f}</h4>
-                    <h4>Z-score: {result['z_score']:.3f}</h4>
-
-                </div>
-                """,
+                f"<h3 style='text-align:center; color:green;'>VO2 Percentile: {result['percentile_label']}</h1>",
                 unsafe_allow_html=True
             )
 
-            c1, c2 = st.columns([2, 0.1])
 
-            with c1:
-                with st.expander("LMS Reference", expanded=False):
-                    st.write(f"**L:** {result['L']}")
-                    st.write(f"**M:** {result['M']}")
-                    st.write(f"**S:** {result['S']}")
-                    st.write(f"**Reference type:** {result['reference_type']}")
+            with st.expander("LMS Reference", expanded=False):
+                st.write(f"Percentile: {result['percentile']:.2f}")
+                st.write(f"Z-score: {result['z_score']:.3f}")
+                st.write(f"**L:** {result['L']}")
+                st.write(f"**M:** {result['M']}")
+                st.write(f"**S:** {result['S']}")
+                st.write(f"**Reference type:** {result['reference_type']}")
 
         except Exception as e:
             st.error(f"Error calculating VO2 percentile: {e}")
@@ -628,29 +476,27 @@ def render_wrPeak_score(refs):
             #     "sex": result["sex"],
             # }
 
+            # st.markdown(
+            #     f"""
+            #     <div style="text-align:center;">
+            #         <h3>WR Peak/kg Percentile</h3>
+            #         <h1 style="color:green; font-size:80px;">{result['percentile_label']}</h1>
+            #         <h4>Percentile: {result['percentile']:.2f}</h4>
+            #         <h4>Z-score: {result['z_score']:.3f}</h4>
+            #     </div>
+            #     """,
+            #     unsafe_allow_html=True
+            # )
             st.markdown(
-                f"""
-                <div style="text-align:center;">
-                    <h3>WR Peak/kg Percentile</h3>
-                    <h1 style="color:green; font-size:80px;">{result['percentile_label']}</h1>
-                    <h4>Percentile: {result['percentile']:.2f}</h4>
-                    <h4>Z-score: {result['z_score']:.3f}</h4>
-                </div>
-                """,
+                f"<h3 style='text-align:center; color:green;'>WR Peak Percentile: {result['percentile_label']} {result['percentile']:.2f}</h1>",
                 unsafe_allow_html=True
             )
             st.session_state.score['wr_score'] = result['z_score']
 
-            c1, c2 = st.columns(2)
 
-            with c1:
-                st.subheader("Inputs")
-                st.write(f"**Sex:** {result['sex']}")
-                st.write(f"**Age (years):** {result['x_value']}")
-                st.write(f"**Observed WR Peak/kg:** {result['observed_value']}")
-
-            with c2:
-                st.subheader("LMS Reference")
+            with st.expander("Reference", expanded=False):
+                st.write(f"Percentile: {result['percentile']:.2f}")
+                st.write(f"Z-score: {result['z_score']:.3f}")
                 st.write(f"**L:** {result['L']}")
                 st.write(f"**M:** {result['M']}")
                 st.write(f"**S:** {result['S']}")
