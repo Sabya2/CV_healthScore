@@ -9,6 +9,8 @@ from utils import (
     score_bp_from_json,
     score_bmi_from_df,
     score_measurement,
+    score_baPWV_peak,
+    # score_grip_strength, 
 )
 
 
@@ -20,12 +22,14 @@ def init_measurement_state():
         "height_cm": 140.0,
         "weight_kg": 35.0,
         "sleep_hours": 9.0,
+        "grip_strength": 5.5,
         "systolic_bp": 110.0,
         "diastolic_bp": 70.0,
         "treated": False,
         "vo2_value": 45.0,
         "wr_peak_value": 0.50,
         "cimt_value": 0.50,
+        "momo": 42.0, 
     }
 
     for key, value in defaults.items():
@@ -75,7 +79,23 @@ def render_measurement_inputs():
             step=0.1,
             key="input_sleep"
         )
+        momo = st.number_input(
+            "MOMO",
+            min_value=42.0,
+            max_value=100.0, 
+            value=float(st.session_state.momo),
+            step=0.1,
+            key="input _momo"
+        )
     with col3:
+        grip_strength = st.number_input(
+            "grip BP",
+            min_value=5.0,
+            max_value=50.0,
+            value=float(st.session_state.grip_strength),
+            step=1.0,
+            key="grip strength"
+        )
         systolic_bp = st.number_input(
             "Systolic BP",
             min_value=40.0,
@@ -125,17 +145,31 @@ def render_measurement_inputs():
             key="input_wr_peak"
         )
 
+        if age >=12:
+            baPWV_value = st.number_input(
+                "Observed pwv peak/kg",
+                min_value=0.38,
+                max_value=6.0,
+                value=float(st.session_state.wr_peak_value),
+                step=0.01,
+                format="%.2f",
+                key="input_baPWV"
+            )
+            st.session_state.baPWV = baPWV_value
+
     st.session_state.sex = sex
     st.session_state.age = age
     st.session_state.height_cm = height_cm
     st.session_state.weight_kg = weight_kg
     st.session_state.sleep_hours = sleep_hours
     st.session_state.treated = treated
+    st.session_state.grip_strength = grip_strength
     st.session_state.systolic_bp = systolic_bp
     st.session_state.diastolic_bp = diastolic_bp
     st.session_state.vo2_value = vo2_value
     st.session_state.cimt_value = cimt_value
     st.session_state.wr_peak_value = wr_peak_value
+    st.session_state.momo = momo
 
     st.success("Measurements saved to session state.")
 
@@ -452,6 +486,8 @@ def render_cimt_score(refs):
 
 
 
+
+
 def render_wrPeak_score(refs):
     st.header("WR Peak/kg Percentile")
 
@@ -504,3 +540,156 @@ def render_wrPeak_score(refs):
 
         except Exception as e:
             st.error(f"Error calculating WR Peak percentile: {e}")
+
+
+
+
+def render_baPWV_score(refs):
+    st.header("baPWV Peak Percentile")
+
+    if st.button("Calculate baPWV Peak Percentile", key="bapwvpeak_btn"):
+        try:
+            result = score_measurement(
+                metric="baPWV_peak",
+                sex=st.session_state.sex,
+                observed_value=st.session_state.bapwv_peak_value,
+                age=st.session_state.age,
+                refs=refs,
+            )
+
+            if not result.get("possible", True):
+                st.warning(result.get("message", "Not possible for age <= 12"))
+                return
+
+            st.markdown(
+                f"<h3 style='text-align:center; color:green;'>baPWV Peak Percentile: {result['percentile_label']} {result['percentile']:.2f}</h3>",
+                unsafe_allow_html=True
+            )
+
+            st.session_state.score['bapwv_score'] = result['z_score']
+
+            with st.expander("Reference", expanded=False):
+                st.write(f"Percentile: {result['percentile']:.2f}")
+                st.write(f"Z-score: {result['z_score']:.3f}")
+                st.write(f"**L:** {result['L']}")
+                st.write(f"**M:** {result['M']}")
+                st.write(f"**S:** {result['S']}")
+                st.write(f"**Reference type:** {result['reference_type']}")
+
+        except Exception as e:
+            st.error(f"Error calculating baPWV Peak percentile: {e}")
+
+def render_KidScreen_score(refs):
+    return None
+
+
+def render_momo_score(refs):
+    return None
+
+def render_momo_score(refs):
+    st.header("MOMO Percentile")
+
+    if st.button("Calculate MOMO Percentile", key="momo_btn"):
+        try:
+            result = score_measurement(
+                metric="momo",
+                sex=st.session_state.sex,
+                observed_value=st.session_state.momo_value,
+                age=st.session_state.age,
+                refs=refs,
+            )
+
+            if not result.get("possible", True):
+                st.warning(result.get("message", "MOMO percentile not possible"))
+                return
+
+            st.markdown(
+                f"<h3 style='text-align:center; color:green;'>MOMO Percentile: {result['percentile_label']}</h3>",
+                unsafe_allow_html=True
+            )
+
+            st.session_state.score["momo_score"] = result["z_score_label"]
+
+            with st.expander("Reference", expanded=False):
+                st.write(f"Observed value: {result['observed_value']:.2f}")
+                st.write(f"Matched age: {result['age_used']}")
+                st.write(f"Reference SW: {result['reference_value']:.2f}")
+                st.write(f"Percentile rank: {result['percentile_label']}")
+                st.write(f"Z-score: {result['z_score_label']}")
+                st.write(f"Reference type: {result['reference_type']}")
+
+        except Exception as e:
+            st.error(f"Error calculating MOMO percentile: {e}")
+
+def render_gripStrength_score(refs):
+    st.header("Grip Strength Percentile")
+
+    if st.button("Calculate Grip Strength Percentile", key="gripstrength_btn"):
+        try:
+            result = score_measurement(
+                metric="grip_strength",
+                sex=st.session_state.sex,
+                observed_value=st.session_state.grip_strength_value,
+                age=st.session_state.age,
+                refs=refs,
+            )
+
+            if not result.get("possible", True):
+                st.warning(result.get("message", "Grip strength percentile not possible"))
+                return
+
+            st.markdown(
+                f"<h3 style='text-align:center; color:green;'>Grip Strength Percentile: {result['percentile_label']}</h3>",
+                unsafe_allow_html=True
+            )
+
+            st.session_state.score["grip_score"] = result["percentile_label"]
+
+            with st.expander("Reference", expanded=False):
+                st.write(f"Observed grip strength: {result['observed_value']:.2f} kg")
+                st.write(f"Matched age: {result['age_used']}")
+                st.write(f"Reference grip strength: {result['reference_value']:.2f} kg")
+                st.write(f"Percentile rank: {result['percentile_label']}")
+                st.write(f"Source table: {result['source_table']}")
+                st.write(f"Reference type: {result['reference_type']}")
+
+        except Exception as e:
+            st.error(f"Error calculating Grip Strength percentile: {e}")
+
+
+
+def render_KidScreen_score(refs):
+    st.header("KidScreen Score")
+
+    if st.button("Calculate KidScreen Score", key="kidscreen_btn"):
+        try:
+            result = score_measurement(
+                metric="kidScreen",
+                sex=st.session_state.sex,
+                observed_value=st.session_state.kidscreen_value,
+                age=st.session_state.age,
+                refs=refs,
+            )
+
+            if not result.get("possible", True):
+                st.warning(result.get("message", "KidScreen scoring not possible"))
+                return
+
+            st.markdown(
+                f"<h3 style='text-align:center; color:green;'>KidScreen 0-100 Score: {result['score_0_100']:.2f}</h3>",
+                unsafe_allow_html=True
+            )
+
+            st.session_state.score["kidscreen_score"] = result["score_0_100"]
+
+            with st.expander("Reference", expanded=False):
+                st.write(f"Observed raw score: {result['observed_value']:.2f}")
+                st.write(f"Raw score used: {result['raw_score']}")
+                st.write(f"Age group: {result['age_group']}")
+                st.write(f"0-100 Score: {result['score_0_100']:.2f}")
+                st.write(f"Percentile rank: {result['percentile_label']}")
+                st.write(f"T-score: {result['t_score']}")
+                st.write(f"Reference type: {result['reference_type']}")
+
+        except Exception as e:
+            st.error(f"Error calculating KidScreen score: {e}")

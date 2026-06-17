@@ -11,12 +11,23 @@ from features_utils import (
     render_vo2_score,
     render_cimt_score,
     render_wrPeak_score, 
+    render_baPWV_score,
+    render_KidScreen_score,
+    render_momo_score,
+    render_gripStrength_score,
+    
 )
 
 REFERENCE_PATHS = {
     "BMI": "reference_values/bmi.csv",
     "sleep_json": "reference_values/sleep_score.json",
     "bp_json": "reference_values/bp.json",
+
+    "gripStrength": "reference_values/gripStrength_long_reference.csv",
+    "kidScreen": "reference_values/kidscreen_long_reference.csv",
+    "momo": "reference_values/momo_long_reference.csv",
+    "baPWV": "reference_values/baPWV_LMS_reference.csv",
+
     "vo2": {
         "boys": {"age": "reference_values/vo2peak_kg_boys_lms.csv"},
         "girls": {"age": "reference_values/vo2peak_kg_girls_lms.csv"},
@@ -55,6 +66,22 @@ def render_scores(refs: dict):
         render_vo2_score(refs)
     with row2_col3:
         render_wrPeak_score(refs)
+
+    row3_col1, row3_col2, row3_col3 = st.columns(3, gap = 'xsmall', border = True)
+    with row3_col1:
+        render_baPWV_score(refs)
+    with row3_col2:
+        render_KidScreen_score(refs)
+    with row3_col3:
+        render_momo_score(refs)
+
+    row4_col1, row4_col2, row4_col3 = st.columns(3, gap = 'xsmall', border = True)
+    with row2_col1:
+        render_gripStrength_score(refs)
+    # with row2_col2:
+    #     render_KidScreen_score(refs)
+    # with row2_col3:
+    #     render_momo_score(refs)
 
 
 def main():

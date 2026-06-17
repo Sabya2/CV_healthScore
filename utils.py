@@ -482,6 +482,221 @@ def score_wr_peak(sex: str, observed_value: float, age: float, refs: dict) -> di
     })
     return result
 
+def score_baPWV_peak(sex: str, observed_value: float, age: float, refs: dict) -> dict:
+    if age <= 12:
+        return {
+            "metric": "baPWV_peak",
+            "sex": sex,
+            "reference_type": "age",
+            "possible": False,
+            "message": "Not possible for age <= 12",
+        }
+
+    ref_df = get_reference_df(refs=refs, metric="baPWV_peak", sex=sex, reference_type="age")
+    result = lms_score(
+        value=observed_value,
+        x=age,
+        ref_df=ref_df,
+        x_col="Age",
+    )
+    print("score baPWV")
+    result.update({
+        "metric": "baPWV_peak",
+        "sex": sex,
+        "reference_type": "age",
+        "possible": True,
+    })
+    return result
+
+
+def score_grip_strength(sex: str, observed_value: float, age: float, refs: dict) -> dict:
+    ref_df = refs["grip_strength"].copy()
+
+    sex_map = {
+        "male": "Boys",
+        "m": "Boys",
+        "boy": "Boys",
+        "boys": "Boys",
+        "female": "Girls",
+        "f": "Girls",
+        "girl": "Girls",
+        "girls": "Girls",
+    }
+
+    sex_key = str(sex).strip().lower()
+    ref_sex = sex_map.get(sex_key, sex)
+
+    age_int = int(round(age))
+
+    subset = ref_df[
+        (ref_df["Sex"] == ref_sex) &
+        (ref_df["Age"] == age_int)
+    ].copy()
+
+    if subset.empty:
+        return {
+            "metric": "grip_strength",
+            "sex": sex,
+            "reference_type": "age",
+            "possible": False,
+            "message": f"No grip strength reference found for sex={ref_sex}, age={age_int}",
+        }
+
+    subset["Grip strength (kg)"] = subset["Grip strength (kg)"].astype(float)
+    subset = subset.sort_values("Grip strength (kg)").reset_index(drop=True)
+
+    eligible = subset[subset["Grip strength (kg)"] <= observed_value]
+
+    if eligible.empty:
+        best_row = subset.iloc[0]
+    else:
+        best_row = eligible.iloc[-1]
+
+    return {
+        "metric": "grip_strength",
+        "sex": sex,
+        "reference_type": "age",
+        "possible": True,
+        "age_used": age_int,
+        "observed_value": observed_value,
+        "percentile_label": best_row["Percentile rank"],
+        "reference_value": float(best_row["Grip strength (kg)"]),
+        "source_table": best_row["Source table"],
+    }
+
+def score_momo(sex: str, observed_value: float, age: float, refs: dict) -> dict:
+    ref_df = refs["momo"].copy()
+
+    sex_map = {
+        "male": "Boys",
+        "m": "Boys",
+        "boy": "Boys",
+        "boys": "Boys",
+        "female": "Girls",
+        "f": "Girls",
+        "girl": "Girls",
+        "girls": "Girls",
+    }
+
+    ref_sex = sex_map.get(str(sex).strip().lower(), sex)
+    age_int = int(round(age))
+
+    subset = ref_df[
+        (ref_df["Sex"] == ref_sex) &
+        (ref_df["Age"] == age_int)
+    ].copy()
+
+    if subset.empty:
+        return {
+            "metric": "momo",
+            "sex": sex,
+            "reference_type": "age",
+            "possible": False,
+            "message": f"No MOMO reference found for sex={ref_sex}, age={age_int}",
+        }
+
+    subset["SW_num"] = (
+        subset["SW"]
+        .astype(str)
+        .str.replace(",", ".", regex=False)
+        .astype(float)
+    )
+
+    subset = subset.sort_values("SW_num").reset_index(drop=True)
+
+    eligible = subset[subset["SW_num"] <= observed_value]
+
+    if eligible.empty:
+        chosen = subset.iloc[0]
+    else:
+        chosen = eligible.iloc[-1]
+
+    return {
+        "metric": "momo",
+        "sex": sex,
+        "reference_type": "age",
+        "possible": True,
+        "age_used": age_int,
+        "observed_value": float(observed_value),
+        "percentile_label": str(chosen["PR"]),
+        "reference_value": float(chosen["SW_num"]),
+        "z_score_label": str(chosen["z"]),
+    }
+
+def score_KidScreen(sex: str, observed_value: float, age: float, refs: dict) -> dict:
+    ref_df = refs["KidScreen"].copy()
+
+    sex_map = {
+        "male": "Males",
+        "m": "Males",
+        "boy": "Males",
+        "boys": "Males",
+        "female": "Females",
+        "f": "Females",
+        "girl": "Females",
+        "girls": "Females",
+    }
+
+    ref_sex = sex_map.get(str(sex).strip().lower(), sex)
+
+    if 8 <= age <= 11:
+        age_group = "8-11"
+    elif 12 <= age <= 18:
+        age_group = "12-18"
+    else:
+        return {
+            "metric": "KidScreen",
+            "sex": sex,
+            "reference_type": "age_group",
+            "possible": False,
+            "message": "KidScreen scoring is only possible for age 8-18",
+        }
+
+    raw_score = int(round(observed_value))
+
+    subset = ref_df[
+        (ref_df["Sex"] == ref_sex) &
+        (ref_df["Age group"] == age_group)
+    ].copy()
+
+    if subset.empty:
+        return {
+            "metric": "KidScreen",
+            "sex": sex,
+            "reference_type": "age_group",
+            "possible": False,
+            "message": f"No KidScreen reference found for sex={ref_sex}, age group={age_group}",
+        }
+
+    subset["Raw-Score"] = pd.to_numeric(subset["Raw-Score"], errors="coerce")
+    subset["0-100 Score"] = pd.to_numeric(subset["0-100 Score"], errors="coerce")
+
+    matched = subset[subset["Raw-Score"] == raw_score]
+
+    if matched.empty:
+        return {
+            "metric": "KidScreen",
+            "sex": sex,
+            "reference_type": "age_group",
+            "possible": False,
+            "message": f"No KidScreen reference found for raw score={raw_score}, sex={ref_sex}, age group={age_group}",
+        }
+
+    chosen = matched.iloc[0]
+
+    return {
+        "metric": "KidScreen",
+        "sex": sex,
+        "reference_type": "age_group",
+        "possible": True,
+        "age_group": age_group,
+        "observed_value": float(observed_value),
+        "raw_score": raw_score,
+        "score_0_100": float(chosen["0-100 Score"]),
+        "percentile_label": str(chosen["PR"]),
+        "t_score": str(chosen["TS"]),
+    }
+
 
 def score_measurement(
     metric: str,
@@ -519,5 +734,38 @@ def score_measurement(
             refs=refs,
             age=age,
         )
+    
+    if metric == "baPWV":
+        return score_baPWV_peak(
+            sex=sex,
+            observed_value=observed_value,
+            refs=refs,
+            age=age,
+        )
+    
+    if metric == "grip_strength":
+        return score_grip_strength(
+            sex=sex,
+            observed_value=observed_value,
+            refs=refs,
+            age=age,
+        )
+    
+    if metric == "momo":
+        return score_momo(
+            sex=sex,
+            observed_value=observed_value,
+            refs=refs,
+            age=age,
+        )
+    
+    if metric == "kidScreen":
+        return score_momo(
+            sex=sex,
+            observed_value=observed_value,
+            refs=refs,
+            age=age,
+        )
+
 
     raise ValueError(f"Unsupported metric: {metric}")
