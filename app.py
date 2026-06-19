@@ -23,10 +23,10 @@ REFERENCE_PATHS = {
     "sleep_json": "reference_values/sleep_score.json",
     "bp_json": "reference_values/bp.json",
 
-    "gripStrength": "reference_values/gripStrength_long_reference.csv",
+    "grip_strength": "reference_values/gripStrength_long_reference.csv",
     "kidScreen": "reference_values/kidscreen_long_reference.csv",
     "momo": "reference_values/momo_long_reference.csv",
-    "baPWV": "reference_values/baPWV_LMS_reference.csv",
+    "baPWV_peak": "reference_values/baPWV_LMS_reference.csv",
 
     "vo2": {
         "boys": {"age": "reference_values/vo2peak_kg_boys_lms.csv"},
@@ -103,6 +103,7 @@ def main():
             )
     if profile_summary:
         render_star_plot(st.session_state.score)
+        st.session_state.score
 
 
 if __name__ == "__main__":

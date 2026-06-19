@@ -27,9 +27,11 @@ def init_measurement_state():
         "diastolic_bp": 70.0,
         "treated": False,
         "vo2_value": 45.0,
-        "wr_peak_value": 0.50,
+        "wr_peak_value": 3.20,
+        "baPWV_peak_value":3.0,
         "cimt_value": 0.50,
         "momo": 42.0, 
+        "kidscreen_value":0.0, 
     }
 
     for key, value in defaults.items():
@@ -136,6 +138,17 @@ def render_measurement_inputs():
         )
         st.session_state.momo_value = momo
 
+        kid_screen = st.number_input(
+            "kid screen",
+            min_value=0.0,
+            max_value=100.0, 
+            value=float(st.session_state.kidscreen_value),
+            step=0.1,
+            key="input_kidScreen"
+        )
+
+        st.session_state.kidscreen_value = kid_screen
+
     with col4:
         vo2_value = st.number_input(
             "VO2 peak",
@@ -162,7 +175,7 @@ def render_measurement_inputs():
 
         wr_peak_value = st.number_input(
             "WR peak",
-            min_value=0.38,
+            min_value=3.0,
             max_value=6.0,
             value=float(st.session_state.wr_peak_value),
             step=0.01,
@@ -174,14 +187,14 @@ def render_measurement_inputs():
         if age >=12:
             baPWV_value = st.number_input(
                 "baPWV",
-                min_value=0.38,
-                max_value=6.0,
-                value=float(st.session_state.wr_peak_value),
+                min_value=0.0,
+                max_value=60.0,
+                value=float(st.session_state.baPWV_peak_value),
                 step=0.01,
                 format="%.2f",
                 key="input_baPWV"
             )
-            st.session_state.bapwv_peak_value = baPWV_value
+            st.session_state.baPWV_peak_value = baPWV_value
 
     # st.session_state.sex = sex
     # st.session_state.age = age
@@ -208,68 +221,6 @@ def render_measurement_inputs():
 def z_to_percentile(z):
     return 100 * (0.5 * (1 + math.erf(z / math.sqrt(2))))
 
-
-def render_star_plot(score_dict):
-    plot_scores = {}
-
-    if "sleep_score" in score_dict:
-        plot_scores["Sleep"] = score_dict["sleep_score"]
-
-    if "bp_score" in score_dict:
-        plot_scores["Blood Pressure"] = score_dict["bp_score"]
-
-    if "bmi_score" in score_dict:
-        plot_scores["BMI"] = score_dict["bmi_score"]
-
-    if "vo2_score" in score_dict:
-        plot_scores["VO2 Peak"] = z_to_percentile(score_dict["vo2_score"])
-
-    if "wr_score" in score_dict:
-        plot_scores["WR Peak/kg"] = z_to_percentile(score_dict["wr_score"])
-
-    if "cimt_score" in score_dict:
-        plot_scores["cIMT"] = 100 - z_to_percentile(score_dict["cimt_score"])
-
-    categories = list(plot_scores.keys())
-    values = list(plot_scores.values())
-
-    if not categories:
-        st.warning("No scores available for star plot.")
-        return
-
-    categories += [categories[0]]
-    values += [values[0]]
-
-    fig = go.Figure()
-
-    fig.add_trace(go.Scatterpolar(
-        r=values,
-        theta=categories,
-        fill="toself",
-        name="Patient profile",
-        line=dict(color="lightgreen", width=3),
-        fillcolor="rgba(10, 107, 190, 0.25)"
-    ))
-
-    fig.update_layout(
-        polar=dict(
-            radialaxis=dict(
-                visible=True,
-                range=[0, 100],
-                tickfont=dict(color="orange")
-            ),
-            angularaxis=dict(
-                tickfont=dict(color="orange")
-            )
-        ),
-        showlegend=False,
-        title="Cardiovascular Health Star Plot",
-        title_font=dict(color="white"),
-        font=dict(color="orange"),
-        height=600
-    )
-
-    st.plotly_chart(fig, use_container_width=True)
 
 
 def render_sleep_score(refs):
@@ -574,7 +525,7 @@ def render_baPWV_score(refs):
             result = score_measurement(
                 metric="baPWV_peak",
                 sex=st.session_state.sex,
-                observed_value=st.session_state.bapwv_peak_value,
+                observed_value=st.session_state.baPWV_peak_value,
                 age=st.session_state.age,
                 refs=refs,
             )
@@ -712,3 +663,68 @@ def render_KidScreen_score(refs):
 
         except Exception as e:
             st.error(f"Error calculating KidScreen score: {e}")
+
+
+
+
+def render_star_plot(score_dict):
+    plot_scores = {}
+
+    if "sleep_score" in score_dict:
+        plot_scores["Sleep"] = score_dict["sleep_score"]
+
+    if "bp_score" in score_dict:
+        plot_scores["Blood Pressure"] = score_dict["bp_score"]
+
+    if "bmi_score" in score_dict:
+        plot_scores["BMI"] = score_dict["bmi_score"]
+
+    if "vo2_score" in score_dict:
+        plot_scores["VO2 Peak"] = z_to_percentile(score_dict["vo2_score"])
+
+    if "wr_score" in score_dict:
+        plot_scores["WR Peak/kg"] = z_to_percentile(score_dict["wr_score"])
+
+    if "cimt_score" in score_dict:
+        plot_scores["cIMT"] = 100 - z_to_percentile(score_dict["cimt_score"])
+
+    categories = list(plot_scores.keys())
+    values = list(plot_scores.values())
+
+    if not categories:
+        st.warning("No scores available for star plot.")
+        return
+
+    categories += [categories[0]]
+    values += [values[0]]
+
+    fig = go.Figure()
+
+    fig.add_trace(go.Scatterpolar(
+        r=values,
+        theta=categories,
+        fill="toself",
+        name="Patient profile",
+        line=dict(color="lightgreen", width=3),
+        fillcolor="rgba(10, 107, 190, 0.25)"
+    ))
+
+    fig.update_layout(
+        polar=dict(
+            radialaxis=dict(
+                visible=True,
+                range=[0, 100],
+                tickfont=dict(color="orange")
+            ),
+            angularaxis=dict(
+                tickfont=dict(color="orange")
+            )
+        ),
+        showlegend=False,
+        title="Cardiovascular Health Star Plot",
+        title_font=dict(color="white"),
+        font=dict(color="orange"),
+        height=600
+    )
+
+    st.plotly_chart(fig, use_container_width=True)

@@ -474,7 +474,6 @@ def score_wr_peak(sex: str, observed_value: float, age: float, refs: dict) -> di
         ref_df=ref_df,
         x_col="Age",
     )
-    print('score wr')
     result.update({
         "metric": "wr_peak",
         "sex": sex,
@@ -483,6 +482,7 @@ def score_wr_peak(sex: str, observed_value: float, age: float, refs: dict) -> di
     return result
 
 def score_baPWV_peak(sex: str, observed_value: float, age: float, refs: dict) -> dict:
+    ref_df = pd.read_csv(refs['baPWV_peak'])
     if age <= 12:
         return {
             "metric": "baPWV_peak",
@@ -491,15 +491,14 @@ def score_baPWV_peak(sex: str, observed_value: float, age: float, refs: dict) ->
             "possible": False,
             "message": "Not possible for age <= 12",
         }
-
-    ref_df = get_reference_df(refs=refs, metric="baPWV_peak", sex=sex, reference_type="age")
+    # ref_df = get_reference_df(refs=refs, metric="baPWV_peak", sex=sex, reference_type="age")
+    ref_df = pd.read_csv(refs['baPWV_peak'])
     result = lms_score(
         value=observed_value,
         x=age,
         ref_df=ref_df,
         x_col="Age",
     )
-    print("score baPWV")
     result.update({
         "metric": "baPWV_peak",
         "sex": sex,
@@ -510,7 +509,7 @@ def score_baPWV_peak(sex: str, observed_value: float, age: float, refs: dict) ->
 
 
 def score_grip_strength(sex: str, observed_value: float, age: float, refs: dict) -> dict:
-    ref_df = refs["grip_strength"].copy()
+    ref_df = pd.read_csv(refs["grip_strength"])
 
     sex_map = {
         "male": "Boys",
@@ -522,6 +521,7 @@ def score_grip_strength(sex: str, observed_value: float, age: float, refs: dict)
         "girl": "Girls",
         "girls": "Girls",
     }
+    # print('something')
 
     sex_key = str(sex).strip().lower()
     ref_sex = sex_map.get(sex_key, sex)
@@ -532,6 +532,7 @@ def score_grip_strength(sex: str, observed_value: float, age: float, refs: dict)
         (ref_df["Sex"] == ref_sex) &
         (ref_df["Age"] == age_int)
     ].copy()
+    # print(subset)
 
     if subset.empty:
         return {
@@ -544,7 +545,7 @@ def score_grip_strength(sex: str, observed_value: float, age: float, refs: dict)
 
     subset["Grip strength (kg)"] = subset["Grip strength (kg)"].astype(float)
     subset = subset.sort_values("Grip strength (kg)").reset_index(drop=True)
-    print(subset)
+    # print(subset)
 
     eligible = subset[subset["Grip strength (kg)"] <= observed_value]
 
@@ -566,7 +567,7 @@ def score_grip_strength(sex: str, observed_value: float, age: float, refs: dict)
     }
 
 def score_momo(sex: str, observed_value: float, age: float, refs: dict) -> dict:
-    ref_df = refs["momo"].copy()
+    ref_df = pd.read_csv(refs["momo"])
 
     sex_map = {
         "male": "Boys",
@@ -625,7 +626,7 @@ def score_momo(sex: str, observed_value: float, age: float, refs: dict) -> dict:
     }
 
 def score_KidScreen(sex: str, observed_value: float, age: float, refs: dict) -> dict:
-    ref_df = refs["KidScreen"].copy()
+    ref_df = pd.read_csv(refs["kidScreen"])
 
     sex_map = {
         "male": "Males",
@@ -707,7 +708,7 @@ def score_measurement(
     age: Optional[float] = None,
     height: Optional[float] = None,
 ) -> dict:
-    metric = str(metric).strip().lower()
+    metric = str(metric).strip()
 
     if metric == "vo2":
         if age is None:
@@ -736,7 +737,8 @@ def score_measurement(
             age=age,
         )
     
-    if metric == "baPWV":
+    if metric == "baPWV_peak":
+        print('something')
         return score_baPWV_peak(
             sex=sex,
             observed_value=observed_value,
@@ -762,7 +764,7 @@ def score_measurement(
         )
     
     if metric == "kidScreen":
-        return score_momo(
+        return score_KidScreen(
             sex=sex,
             observed_value=observed_value,
             refs=refs,
