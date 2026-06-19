@@ -86,7 +86,7 @@ def render_scores(refs: dict):
 
 def main():
     st.set_page_config(page_title="Health Score Demo", layout="wide")
-    st.title("Cardio Health Score")
+    st.title("Cardiac Health Score")
 
     if "score" not in st.session_state:
         st.session_state.score = {}

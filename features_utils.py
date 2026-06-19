@@ -9,7 +9,7 @@ from utils import (
     score_bp_from_json,
     score_bmi_from_df,
     score_measurement,
-    score_baPWV_peak,
+    # score_baPWV_peak,
     # score_grip_strength, 
 )
 
@@ -40,12 +40,6 @@ def render_measurement_inputs():
     init_measurement_state()
     col1, col2, col3, col4 = st.columns(4, border = True, gap = 'xxsmall')
     with col1:
-        sex = st.selectbox(
-            "Sex",
-            ["boys", "girls"],
-            index=0 if st.session_state.sex == "boys" else 1,
-            key="input_sex"
-        )
         age = st.number_input(
             "Age (years)",
             min_value=0.0,
@@ -54,6 +48,16 @@ def render_measurement_inputs():
             step=0.1,
             key="input_age"
         )
+        st.session_state.age = age
+
+        sex = st.selectbox(
+            "Sex",
+            ["boys", "girls"],
+            index=0 if st.session_state.sex == "boys" else 1,
+            key="input_sex"
+        )
+        st.session_state.sex = sex
+
         height_cm = st.number_input(
             "Height (cm)",
             min_value=30.0,
@@ -62,7 +66,8 @@ def render_measurement_inputs():
             step=0.1,
             key="input_height"
         )
-    with col2:
+        st.session_state.height_cm = height_cm
+
         weight_kg = st.number_input(
             "Weight (kg)",
             min_value=1.0,
@@ -71,31 +76,8 @@ def render_measurement_inputs():
             step=0.1,
             key="input_weight"
         )
-        sleep_hours = st.number_input(
-            "Sleep hours",
-            min_value=0.0,
-            max_value=24.0,
-            value=float(st.session_state.sleep_hours),
-            step=0.1,
-            key="input_sleep"
-        )
-        momo = st.number_input(
-            "MOMO",
-            min_value=42.0,
-            max_value=100.0, 
-            value=float(st.session_state.momo),
-            step=0.1,
-            key="input _momo"
-        )
-    with col3:
-        grip_strength = st.number_input(
-            "grip BP",
-            min_value=5.0,
-            max_value=50.0,
-            value=float(st.session_state.grip_strength),
-            step=1.0,
-            key="grip strength"
-        )
+        st.session_state.weight_kg = weight_kg
+    with col2:
         systolic_bp = st.number_input(
             "Systolic BP",
             min_value=40.0,
@@ -112,22 +94,62 @@ def render_measurement_inputs():
             step=1.0,
             key="input_dia"
         )
+        st.session_state.systolic_bp = systolic_bp
+        st.session_state.diastolic_bp = diastolic_bp
+
+
         treated = st.checkbox(
             "BP Treated",
             value=bool(st.session_state.treated),
             key="input_treated"
         )
+        st.session_state.treated = treated
+
+    with col3:
+        sleep_hours = st.number_input(
+            "Sleep hours",
+            min_value=0.0,
+            max_value=24.0,
+            value=float(st.session_state.sleep_hours),
+            step=0.1,
+            key="input_sleep"
+        )
+        st.session_state.sleep_hours = sleep_hours
+
+        grip_strength = st.number_input(
+            "Grip Strength",
+            min_value=5.5,
+            max_value=300.0,
+            value=float(st.session_state.grip_strength),
+            step=1.0,
+            key="grip strength"
+        )
+        st.session_state.grip_strength_value = grip_strength
+    
+        momo = st.number_input(
+            "Standing long jump momo",
+            min_value=42.0,
+            # max_value=100.0, 
+            value=float(st.session_state.momo),
+            step=0.1,
+            key="input_momo"
+        )
+        st.session_state.momo_value = momo
+
     with col4:
         vo2_value = st.number_input(
-            "Observed VO2peak",
+            "VO2 peak",
             min_value=0.1,
             max_value=100.0,
             value=float(st.session_state.vo2_value),
             step=0.1,
             key="input_vo2"
         )
+        st.session_state.vo2_value = vo2_value
+
+
         cimt_value = st.number_input(
-            "Observed cIMT",
+            "CIMT",
             min_value=0.001,
             max_value=2.0,
             value=float(st.session_state.cimt_value),
@@ -135,8 +157,11 @@ def render_measurement_inputs():
             format="%.3f",
             key="input_cimt"
         )
+        st.session_state.cimt_value = cimt_value
+
+
         wr_peak_value = st.number_input(
-            "Observed WR peak/kg",
+            "WR peak",
             min_value=0.38,
             max_value=6.0,
             value=float(st.session_state.wr_peak_value),
@@ -144,10 +169,11 @@ def render_measurement_inputs():
             format="%.2f",
             key="input_wr_peak"
         )
+        st.session_state.wr_peak_value = wr_peak_value
 
         if age >=12:
             baPWV_value = st.number_input(
-                "Observed pwv peak/kg",
+                "baPWV",
                 min_value=0.38,
                 max_value=6.0,
                 value=float(st.session_state.wr_peak_value),
@@ -155,21 +181,24 @@ def render_measurement_inputs():
                 format="%.2f",
                 key="input_baPWV"
             )
-            st.session_state.baPWV = baPWV_value
+            st.session_state.bapwv_peak_value = baPWV_value
 
-    st.session_state.sex = sex
-    st.session_state.age = age
-    st.session_state.height_cm = height_cm
-    st.session_state.weight_kg = weight_kg
-    st.session_state.sleep_hours = sleep_hours
-    st.session_state.treated = treated
-    st.session_state.grip_strength = grip_strength
-    st.session_state.systolic_bp = systolic_bp
-    st.session_state.diastolic_bp = diastolic_bp
-    st.session_state.vo2_value = vo2_value
-    st.session_state.cimt_value = cimt_value
-    st.session_state.wr_peak_value = wr_peak_value
-    st.session_state.momo = momo
+    # st.session_state.sex = sex
+    # st.session_state.age = age
+    # st.session_state.height_cm = height_cm
+    # st.session_state.weight_kg = weight_kg
+    # st.session_state.sleep_hours = sleep_hours
+    # st.session_state.treated = treated
+    # # st.session_state.grip_strength = grip_strength
+    # # st.session_state.systolic_bp = systolic_bp
+    # # st.session_state.diastolic_bp = diastolic_bp
+    # # st.session_state.vo2_value = vo2_value
+    # # st.session_state.cimt_value = cimt_value
+    # # st.session_state.wr_peak_value = wr_peak_value
+    # st.session_state.momo_value = momo
+    # st.session_state.kidscreen_value = momo
+    # st.session_state.bapwv_peak_value = momo
+    
 
     st.success("Measurements saved to session state.")
 
@@ -241,9 +270,6 @@ def render_star_plot(score_dict):
     )
 
     st.plotly_chart(fig, use_container_width=True)
-
-
-
 
 
 def render_sleep_score(refs):
@@ -486,8 +512,6 @@ def render_cimt_score(refs):
 
 
 
-
-
 def render_wrPeak_score(refs):
     st.header("WR Peak/kg Percentile")
 
@@ -542,8 +566,6 @@ def render_wrPeak_score(refs):
             st.error(f"Error calculating WR Peak percentile: {e}")
 
 
-
-
 def render_baPWV_score(refs):
     st.header("baPWV Peak Percentile")
 
@@ -579,12 +601,7 @@ def render_baPWV_score(refs):
         except Exception as e:
             st.error(f"Error calculating baPWV Peak percentile: {e}")
 
-def render_KidScreen_score(refs):
-    return None
 
-
-def render_momo_score(refs):
-    return None
 
 def render_momo_score(refs):
     st.header("MOMO Percentile")
@@ -626,6 +643,7 @@ def render_gripStrength_score(refs):
 
     if st.button("Calculate Grip Strength Percentile", key="gripstrength_btn"):
         try:
+            
             result = score_measurement(
                 metric="grip_strength",
                 sex=st.session_state.sex,
@@ -633,6 +651,7 @@ def render_gripStrength_score(refs):
                 age=st.session_state.age,
                 refs=refs,
             )
+            # st.write(result)
 
             if not result.get("possible", True):
                 st.warning(result.get("message", "Grip strength percentile not possible"))

@@ -544,6 +544,7 @@ def score_grip_strength(sex: str, observed_value: float, age: float, refs: dict)
 
     subset["Grip strength (kg)"] = subset["Grip strength (kg)"].astype(float)
     subset = subset.sort_values("Grip strength (kg)").reset_index(drop=True)
+    print(subset)
 
     eligible = subset[subset["Grip strength (kg)"] <= observed_value]
 
@@ -744,6 +745,7 @@ def score_measurement(
         )
     
     if metric == "grip_strength":
+        print("before grip")
         return score_grip_strength(
             sex=sex,
             observed_value=observed_value,
