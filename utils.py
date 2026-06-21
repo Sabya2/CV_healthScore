@@ -401,7 +401,7 @@ def get_reference_df(
 
 
 # =========================================================
-# VO2 and cIMT scoring
+# VO2 
 # =========================================================
 
 def score_vo2(
@@ -426,6 +426,10 @@ def score_vo2(
     )
     return result
 
+
+# =========================================================
+# cIMT scoring
+# =========================================================
 
 def score_cimt(
     sex: str,
@@ -466,6 +470,11 @@ def score_cimt(
     return results
 
 
+# =========================================================
+# WR peak scoring
+# =========================================================
+
+
 def score_wr_peak(sex: str, observed_value: float, age: float, refs: dict) -> dict:
     ref_df = get_reference_df(refs = refs, metric="wr_peak", sex=sex, reference_type="age")
     result = lms_score(
@@ -480,6 +489,11 @@ def score_wr_peak(sex: str, observed_value: float, age: float, refs: dict) -> di
         "reference_type": "age",
     })
     return result
+
+
+# =========================================================
+# baPWV scoring
+# =========================================================
 
 def score_baPWV_peak(sex: str, observed_value: float, age: float, refs: dict) -> dict:
     ref_df = pd.read_csv(refs['baPWV_peak'])
@@ -507,6 +521,10 @@ def score_baPWV_peak(sex: str, observed_value: float, age: float, refs: dict) ->
     })
     return result
 
+
+# =========================================================
+# Grip strength scoring
+# =========================================================
 
 def score_grip_strength(sex: str, observed_value: float, age: float, refs: dict) -> dict:
     ref_df = pd.read_csv(refs["grip_strength"])
@@ -566,6 +584,11 @@ def score_grip_strength(sex: str, observed_value: float, age: float, refs: dict)
         "source_table": best_row["Source table"],
     }
 
+
+# =========================================================
+# Standing Long jump scoring
+# =========================================================
+
 def score_momo(sex: str, observed_value: float, age: float, refs: dict) -> dict:
     ref_df = pd.read_csv(refs["momo"])
 
@@ -624,6 +647,12 @@ def score_momo(sex: str, observed_value: float, age: float, refs: dict) -> dict:
         "reference_value": float(chosen["SW_num"]),
         "z_score_label": str(chosen["z"]),
     }
+
+
+
+# =========================================================
+# Kidcsreen scoring
+# =========================================================
 
 def score_KidScreen(sex: str, observed_value: float, age: float, refs: dict) -> dict:
     ref_df = pd.read_csv(refs["kidScreen"])

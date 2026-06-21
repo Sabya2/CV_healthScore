@@ -22,7 +22,7 @@ def init_measurement_state():
         "height_cm": 140.0,
         "weight_kg": 35.0,
         "sleep_hours": 9.0,
-        "grip_strength": 5.5,
+        "grip_strength": 4.0,
         "systolic_bp": 110.0,
         "diastolic_bp": 70.0,
         "treated": False,
@@ -30,8 +30,8 @@ def init_measurement_state():
         "wr_peak_value": 3.20,
         "baPWV_peak_value":3.0,
         "cimt_value": 0.50,
-        "momo": 42.0, 
-        "kidscreen_value":0.0, 
+        "momo": 10.0, 
+        "kidscreen_value":10.0, 
     }
 
     for key, value in defaults.items():
@@ -120,7 +120,7 @@ def render_measurement_inputs():
 
         grip_strength = st.number_input(
             "Grip Strength",
-            min_value=5.5,
+            min_value=4.0,
             max_value=300.0,
             value=float(st.session_state.grip_strength),
             step=1.0,
@@ -130,7 +130,7 @@ def render_measurement_inputs():
     
         momo = st.number_input(
             "Standing long jump momo",
-            min_value=42.0,
+            min_value=10.0,
             # max_value=100.0, 
             value=float(st.session_state.momo),
             step=0.1,
@@ -140,7 +140,7 @@ def render_measurement_inputs():
 
         kid_screen = st.number_input(
             "kid screen",
-            min_value=0.0,
+            min_value=10.0,
             max_value=100.0, 
             value=float(st.session_state.kidscreen_value),
             step=0.1,
@@ -651,6 +651,7 @@ def render_KidScreen_score(refs):
             )
 
             st.session_state.score["kidscreen_score"] = result["score_0_100"]
+            
 
             with st.expander("Reference", expanded=False):
                 st.write(f"Observed raw score: {result['observed_value']:.2f}")
@@ -687,6 +688,23 @@ def render_star_plot(score_dict):
 
     if "cimt_score" in score_dict:
         plot_scores["cIMT"] = 100 - z_to_percentile(score_dict["cimt_score"])
+
+    if "kidscreen_score" in score_dict:
+        plot_scores["kidscreen_score"] = score_dict["kidscreen_score"]
+
+    if "kidscreen_score" in score_dict:
+        plot_scores["kidscreen_score"] = score_dict["kidscreen_score"]
+
+    if "grip_score" in score_dict:
+        plot_scores["grip_score"] = score_dict["grip_score"]
+
+    if "momo_score" in score_dict:
+        plot_scores["momo_score"] = score_dict["momo_score"]
+
+    if 'bapwv_score' in score_dict:
+        plot_scores['bapwv_score'] = score_dict['bapwv_score']
+
+
 
     categories = list(plot_scores.keys())
     values = list(plot_scores.values())

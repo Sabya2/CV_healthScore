@@ -67,21 +67,16 @@ def render_scores(refs: dict):
     with row2_col3:
         render_wrPeak_score(refs)
 
-    row3_col1, row3_col2, row3_col3 = st.columns(3, gap = 'xsmall', border = True)
+    row3_col1, row3_col2, row3_col3, row3_col4  = st.columns(4, gap = 'xsmall', border = True)
     with row3_col1:
         render_baPWV_score(refs)
     with row3_col2:
         render_KidScreen_score(refs)
     with row3_col3:
         render_momo_score(refs)
-
-    row4_col1, row4_col2, row4_col3 = st.columns(3, gap = 'xsmall', border = True)
-    with row2_col1:
+    with row3_col4:
         render_gripStrength_score(refs)
-    # with row2_col2:
-    #     render_KidScreen_score(refs)
-    # with row2_col3:
-    #     render_momo_score(refs)
+   
 
 
 def main():
@@ -113,15 +108,6 @@ if __name__ == "__main__":
 
 
 
-# wr_peak_value = st.number_input(
-#                 "Observed wr peak (get it checked fro min and max)",
-#                 min_value=0.001,
-#                 max_value=2.0,
-#                 value=float(st.session_state.wr_peak_value),
-#                 step=0.001,
-#                 format="%.3f",
-#                 key="input_wr peak"
-#             )
 
 
 
