@@ -98,7 +98,6 @@ def main():
             )
     if profile_summary:
         render_star_plot(st.session_state.score)
-        st.session_state.score
 
 
 if __name__ == "__main__":

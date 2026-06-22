@@ -219,6 +219,7 @@ def render_measurement_inputs():
 
 
 def z_to_percentile(z):
+    # st.write(z)
     return 100 * (0.5 * (1 + math.erf(z / math.sqrt(2))))
 
 
@@ -667,8 +668,147 @@ def render_KidScreen_score(refs):
 
 
 
+import plotly.graph_objects as go
+import plotly.express as px
+import streamlit as st
 
 def render_star_plot(score_dict):
+    plot_scores = {}
+
+    if "sleep_score" in score_dict:
+        plot_scores["Sleep"] = score_dict["sleep_score"]
+
+    if "bp_score" in score_dict:
+        plot_scores["Blood Pressure"] = score_dict["bp_score"]
+
+    if "bmi_score" in score_dict:
+        plot_scores["BMI"] = score_dict["bmi_score"]
+
+    if "vo2_score" in score_dict:
+        # st.write('vo2', score_dict["vo2_score"])
+        plot_scores["VO2 Peak"] = z_to_percentile(score_dict["vo2_score"])
+
+    if "wr_score" in score_dict:
+        plot_scores["WR Peak/kg"] = z_to_percentile(score_dict["wr_score"])
+
+    if "cimt_score" in score_dict:
+        plot_scores["cIMT"] = 100 - z_to_percentile(score_dict["cimt_score"])
+
+    if "kidscreen_score" in score_dict:
+        plot_scores["KIDSCREEN"] = score_dict["kidscreen_score"]
+
+    # if "grip_score" in score_dict:
+    #     plot_scores["Grip Strength"] = z_to_percentile(score_dict["grip_score"])
+
+    if "momo_score" in score_dict:
+        plot_scores["MoMo"] = score_dict["momo_score"]
+
+    if "bapwv_score" in score_dict:
+        plot_scores["baPWV"] = score_dict["bapwv_score"]
+
+    if not plot_scores:
+        st.warning("No scores available for star plot.")
+        return
+
+    categories = list(plot_scores.keys())
+    values = list(plot_scores.values())
+
+    col1, col2 = st.columns([1.5, 2], gap = 'xsmall', border = False)
+    with col1:
+        # ---------- Combined CVH mean bar ----------
+        mean_score = sum(values) / len(values)
+
+        # 0 = bad (red), 100 = good (green)
+        bar_color = px.colors.sample_colorscale(
+            "RdYlGn",
+            [mean_score / 100.0]
+        )[0]
+
+        fig_bar = go.Figure()
+
+        fig_bar.add_trace(go.Bar(
+            x=[mean_score],
+            y=["Combined CVH Score"],
+            orientation="h",
+            text=[f"{mean_score:.1f}"],
+            textposition="inside",
+            insidetextanchor="middle",
+            marker=dict(
+                color=[bar_color],
+                line=dict(color="white", width=1.5)
+            ),
+            hovertemplate="Mean score: %{x:.1f}<extra></extra>"
+        ))
+
+        fig_bar.update_layout(
+            title="Combined Cardiovascular Health Score",
+            title_font=dict(color="white"),
+            font=dict(color="orange"),
+            xaxis=dict(
+                title="Score",
+                range=[0, 100],
+                tickfont=dict(color="orange"),
+                title_font=dict(color="orange")
+            ),
+            yaxis=dict(
+                tickfont=dict(color="orange")
+            ),
+            plot_bgcolor="rgba(0,0,0,0)",
+            paper_bgcolor="rgba(0,0,0,0)",
+            height=180,
+            showlegend=False,
+            margin=dict(l=40, r=40, t=60, b=40)
+        )
+
+        st.plotly_chart(fig_bar, use_container_width=True)
+        st.caption(f"Combined CVH score = mean of {len(values)} "
+                       f"available elements in score_dict: {mean_score:.1f}/100")
+
+        with st.expander("CVH score", expanded=True):
+            st.write(st.session_state.score)
+        
+    with col2: 
+
+        # ---------- Star plot ----------
+        radar_categories = categories + [categories[0]]
+        radar_values = values + [values[0]]
+
+        fig_star = go.Figure()
+
+        fig_star.add_trace(go.Scatterpolar(
+            r=radar_values,
+            theta=radar_categories,
+            fill="toself",
+            name="Patient profile",
+            line=dict(color="lightgreen", width=3),
+            fillcolor="rgba(10, 107, 190, 0.25)"
+        ))
+
+        fig_star.update_layout(
+            polar=dict(
+                radialaxis=dict(
+                    visible=True,
+                    range=[0, 100],
+                    tickfont=dict(color="orange")
+                ),
+                angularaxis=dict(
+                    tickfont=dict(color="orange")
+                )
+            ),
+            showlegend=False,
+            title="Cardiovascular Health Star Plot",
+            title_font=dict(color="white"),
+            font=dict(color="orange"),
+            height=600
+        )
+
+        st.plotly_chart(fig_star, use_container_width=True)
+
+
+
+
+
+def ___render_star_plot(score_dict):
     plot_scores = {}
 
     if "sleep_score" in score_dict:
