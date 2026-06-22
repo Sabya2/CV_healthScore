@@ -15,6 +15,7 @@ from features_utils import (
     render_KidScreen_score,
     render_momo_score,
     render_gripStrength_score,
+    render_score_bars_gradient, 
     
 )
 
@@ -27,12 +28,13 @@ REFERENCE_PATHS = {
     "kidScreen": "reference_values/kidscreen_long_reference.csv",
     "momo": "reference_values/momo_long_reference.csv",
     "baPWV_peak": "reference_values/baPWV_LMS_reference.csv",
+    "cimt": "reference_values/cIMT_long_reference.csv",
 
     "vo2": {
         "boys": {"age": "reference_values/vo2peak_kg_boys_lms.csv"},
         "girls": {"age": "reference_values/vo2peak_kg_girls_lms.csv"},
     },
-    "cimt": {
+    "___cimt": {
         "boys": {
             "age": "reference_values/cimt_age_boys_LMS.csv",
             "height": "reference_values/cimt_height_boys_LMS.csv",
@@ -53,29 +55,31 @@ REFERENCE_PATHS = {
 def render_scores(refs: dict):
     row1_col1, row1_col2, row1_col3 = st.columns(3, gap = 'xsmall', border = True)
     with row1_col1:
-        render_sleep_score(refs)
-    with row1_col2:
         render_bp_score(refs)
+        # render_sleep_score(refs)
+    with row1_col2:
+        render_baPWV_score(refs)
     with row1_col3:
-        render_bmi_score(refs)
+        render_cimt_score(refs)
 
     row2_col1, row2_col2, row2_col3 = st.columns(3, gap = 'xsmall', border = True)
     with row2_col1:
-        render_cimt_score(refs)
+        render_gripStrength_score(refs)
     with row2_col2:
-        render_vo2_score(refs)
+        render_momo_score(refs)
     with row2_col3:
-        render_wrPeak_score(refs)
+        render_vo2_score(refs)
 
     row3_col1, row3_col2, row3_col3, row3_col4  = st.columns(4, gap = 'xsmall', border = True)
     with row3_col1:
-        render_baPWV_score(refs)
+        render_wrPeak_score(refs)
     with row3_col2:
-        render_KidScreen_score(refs)
+        render_bmi_score(refs)
     with row3_col3:
-        render_momo_score(refs)
+        render_sleep_score(refs)
     with row3_col4:
-        render_gripStrength_score(refs)
+        render_KidScreen_score(refs)
+
    
 
 
@@ -98,6 +102,8 @@ def main():
             )
     if profile_summary:
         render_star_plot(st.session_state.score)
+        render_score_bars_gradient(st.session_state.score)
+   
 
 
 if __name__ == "__main__":

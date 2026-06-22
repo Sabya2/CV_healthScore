@@ -431,7 +431,7 @@ def score_vo2(
 # cIMT scoring
 # =========================================================
 
-def score_cimt(
+def ___score_cimt(
     sex: str,
     observed_value: float,
     refs: dict,
@@ -445,6 +445,8 @@ def score_cimt(
         "sex": sex,
         "observed_value": float(observed_value),
     }
+
+    ref_df = pd.read_csv(refs['cimt'])
 
     if age is not None:
         age_df = get_reference_df(refs=refs, metric="cimt", sex=sex, reference_type="age")
@@ -468,6 +470,184 @@ def score_cimt(
         raise ValueError("cIMT scoring requires age and/or height")
 
     return results
+
+
+import pandas as pd
+import numpy as np
+
+def score_cimt(
+        sex: str, 
+        observed_value: float, 
+        age: float, 
+        height: float, 
+        refs: dict
+        ) -> dict:
+    
+    ref_df = pd.read_csv(refs["cimt"])
+
+    sex_map = {
+        "male": "male",
+        "m": "male",
+        "boy": "male",
+        "boys": "male",
+        "female": "female",
+        "f": "female",
+        "girl": "female",
+        "girls": "female",
+    }
+
+    ref_sex = sex_map.get(str(sex).strip().lower(), str(sex).strip().lower())
+
+    required_cols = {"sex", "Age", "Height"}
+    if not required_cols.issubset(ref_df.columns):
+        return {
+            "metric": "cIMT",
+            "sex": sex,
+            "reference_type": "age_height_sex",
+            "possible": False,
+            "message": f"Reference file missing required columns: {required_cols - set(ref_df.columns)}",
+        }
+
+    pct_candidates = ["p5", "p10", "p25", "p50", "p75", "p90", "p95"]
+    pct_cols = [c for c in pct_candidates if c in ref_df.columns and ref_df[c].notna().any()]
+
+    if len(pct_cols) < 2:
+        return {
+            "metric": "cIMT",
+            "sex": sex,
+            "reference_type": "age_height_sex",
+            "possible": False,
+            "message": "Reference file must contain at least two percentile columns.",
+        }
+
+    ref_df["sex"] = ref_df["sex"].astype(str).str.strip().str.lower()
+    ref_df["Age"] = pd.to_numeric(ref_df["Age"], errors="coerce")
+    ref_df["Height"] = pd.to_numeric(ref_df["Height"], errors="coerce")
+
+    for col in pct_cols:
+        ref_df[col] = pd.to_numeric(ref_df[col], errors="coerce")
+
+    subset = ref_df[ref_df["sex"] == ref_sex].copy()
+
+    if subset.empty:
+        return {
+            "metric": "cIMT",
+            "sex": sex,
+            "reference_type": "age_height_sex",
+            "possible": False,
+            "message": f"No cIMT reference found for sex={ref_sex}",
+        }
+
+    ages = np.sort(subset["Age"].dropna().unique())
+
+    if len(ages) == 0:
+        return {
+            "metric": "cIMT",
+            "sex": sex,
+            "reference_type": "age_height_sex",
+            "possible": False,
+            "message": f"No valid ages found for sex={ref_sex}",
+        }
+
+    age_used = ages[np.argmin(np.abs(ages - age))]
+    subset = subset[subset["Age"] == age_used].copy()
+
+    if subset.empty:
+        return {
+            "metric": "cIMT",
+            "sex": sex,
+            "reference_type": "age_height_sex",
+            "possible": False,
+            "message": f"No cIMT reference found for sex={ref_sex}, nearest age={age_used}",
+        }
+
+    subset = (
+        subset.groupby(["sex", "Age", "Height"], as_index=False)[pct_cols]
+        .mean()
+        .sort_values("Height")
+    )
+
+    heights = np.sort(subset["Height"].dropna().unique())
+
+    if len(heights) == 0:
+        return {
+            "metric": "cIMT",
+            "sex": sex,
+            "reference_type": "age_height_sex",
+            "possible": False,
+            "message": f"No valid heights found for sex={ref_sex}, age={age_used}",
+        }
+
+    if height <= heights.min():
+        chosen = subset[subset["Height"] == heights.min()].iloc[0].copy()
+        height_mode = "below_range_used_min_height"
+    elif height >= heights.max():
+        chosen = subset[subset["Height"] == heights.max()].iloc[0].copy()
+        height_mode = "above_range_used_max_height"
+    else:
+        h_low = heights[heights <= height].max()
+        h_high = heights[heights >= height].min()
+
+        row_low = subset[subset["Height"] == h_low].iloc[0].copy()
+        row_high = subset[subset["Height"] == h_high].iloc[0].copy()
+
+        if h_low == h_high:
+            chosen = row_low.copy()
+            height_mode = "exact_height_match"
+        else:
+            w = (height - h_low) / (h_high - h_low)
+            chosen = row_low.copy()
+            for col in pct_cols:
+                chosen[col] = row_low[col] + w * (row_high[col] - row_low[col])
+            height_mode = "interpolated_between_heights"
+
+    cimt_cutpoints = chosen[pct_cols].astype(float).to_numpy()
+    percentile_values = np.array([float(c[1:]) for c in pct_cols])
+
+    if np.any(np.diff(cimt_cutpoints) <= 0):
+        return {
+            "metric": "cIMT",
+            "sex": sex,
+            "reference_type": "age_height_sex",
+            "possible": False,
+            "message": "Percentile cutpoints are not strictly increasing.",
+        }
+
+    if "p50" not in pct_cols:
+        return {
+            "metric": "cIMT",
+            "sex": sex,
+            "reference_type": "age_height_sex",
+            "possible": False,
+            "message": "Reference file must contain p50.",
+        }
+
+    p50_value = float(chosen["p50"])
+
+    if observed_value < p50_value:
+        percentile_label = "<P50"
+        percentile_numeric = None
+    elif observed_value == p50_value:
+        percentile_label = "P50"
+        percentile_numeric = 50.0
+    else:
+        percentile_numeric = round(float(np.interp(observed_value, cimt_cutpoints, percentile_values)), 1)
+        percentile_label = f"P{percentile_numeric}"
+
+    return {
+        "metric": "cIMT",
+        "sex": sex,
+        "reference_type": "age_height_sex",
+        "possible": True,
+        "observed_value": float(observed_value),
+        "age_input": float(age),
+        "age_used": float(age_used),
+        "height_input": float(height),
+        "height_reference_mode": height_mode,
+        "percentile_label": percentile_label,
+        "percentile_numeric": percentile_numeric,
+        "reference_cutpoints": {col: float(chosen[col]) for col in pct_cols},
+    }
 
 
 # =========================================================

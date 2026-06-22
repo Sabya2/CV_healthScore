@@ -1,8 +1,11 @@
 import streamlit as st
 import pandas as pd
+import numpy as np
 import math
 import plotly.graph_objects as go
 import streamlit as st
+
+
 
 from utils import (
     get_sleep_score_json,
@@ -32,6 +35,12 @@ def init_measurement_state():
         "cimt_value": 0.50,
         "momo": 10.0, 
         "kidscreen_value":10.0, 
+        "non_hdl":10.0,
+        "hb1ac":10.0, 
+        "paq_c":10.0, 
+        "paq_a":10.0, 
+        "pdq":10.0, 
+        'smoking': 10.0, 
     }
 
     for key, value in defaults.items():
@@ -40,6 +49,7 @@ def init_measurement_state():
 
 def render_measurement_inputs():
     init_measurement_state()
+    
     col1, col2, col3, col4 = st.columns(4, border = True, gap = 'xxsmall')
     with col1:
         age = st.number_input(
@@ -79,6 +89,30 @@ def render_measurement_inputs():
             key="input_weight"
         )
         st.session_state.weight_kg = weight_kg
+
+        hb1ac = st.number_input(
+                "Hb1Ac",
+                min_value=0.0,
+                max_value=150.0,
+                value=float(st.session_state.hb1ac),
+                step=1.0,
+                key="input_hb1ac"
+            )
+        st.session_state.hb1ac = hb1ac
+        st.session_state.score['Blutzucker'] = hb1ac
+
+        non_hdl = st.number_input(
+                "Non-HDL cholesterol",
+                min_value=0.0,
+                max_value=150.0,
+                value=float(st.session_state.non_hdl),
+                step=1.0,
+                key="input_nonHDL"
+            )
+        st.session_state.non_hdl = non_hdl
+        st.session_state.score['Blutfette'] = non_hdl
+    
+    
     with col2:
         systolic_bp = st.number_input(
             "Systolic BP",
@@ -88,6 +122,8 @@ def render_measurement_inputs():
             step=1.0,
             key="input_sys"
         )
+        st.session_state.systolic_bp = systolic_bp
+
         diastolic_bp = st.number_input(
             "Diastolic BP",
             min_value=20.0,
@@ -96,7 +132,6 @@ def render_measurement_inputs():
             step=1.0,
             key="input_dia"
         )
-        st.session_state.systolic_bp = systolic_bp
         st.session_state.diastolic_bp = diastolic_bp
 
 
@@ -106,83 +141,6 @@ def render_measurement_inputs():
             key="input_treated"
         )
         st.session_state.treated = treated
-
-    with col3:
-        sleep_hours = st.number_input(
-            "Sleep hours",
-            min_value=0.0,
-            max_value=24.0,
-            value=float(st.session_state.sleep_hours),
-            step=0.1,
-            key="input_sleep"
-        )
-        st.session_state.sleep_hours = sleep_hours
-
-        grip_strength = st.number_input(
-            "Grip Strength",
-            min_value=4.0,
-            max_value=300.0,
-            value=float(st.session_state.grip_strength),
-            step=1.0,
-            key="grip strength"
-        )
-        st.session_state.grip_strength_value = grip_strength
-    
-        momo = st.number_input(
-            "Standing long jump momo",
-            min_value=10.0,
-            # max_value=100.0, 
-            value=float(st.session_state.momo),
-            step=0.1,
-            key="input_momo"
-        )
-        st.session_state.momo_value = momo
-
-        kid_screen = st.number_input(
-            "kid screen",
-            min_value=10.0,
-            max_value=100.0, 
-            value=float(st.session_state.kidscreen_value),
-            step=0.1,
-            key="input_kidScreen"
-        )
-
-        st.session_state.kidscreen_value = kid_screen
-
-    with col4:
-        vo2_value = st.number_input(
-            "VO2 peak",
-            min_value=0.1,
-            max_value=100.0,
-            value=float(st.session_state.vo2_value),
-            step=0.1,
-            key="input_vo2"
-        )
-        st.session_state.vo2_value = vo2_value
-
-
-        cimt_value = st.number_input(
-            "CIMT",
-            min_value=0.001,
-            max_value=2.0,
-            value=float(st.session_state.cimt_value),
-            step=0.001,
-            format="%.3f",
-            key="input_cimt"
-        )
-        st.session_state.cimt_value = cimt_value
-
-
-        wr_peak_value = st.number_input(
-            "WR peak",
-            min_value=3.0,
-            max_value=6.0,
-            value=float(st.session_state.wr_peak_value),
-            step=0.01,
-            format="%.2f",
-            key="input_wr_peak"
-        )
-        st.session_state.wr_peak_value = wr_peak_value
 
         if age >=12:
             baPWV_value = st.number_input(
@@ -196,22 +154,136 @@ def render_measurement_inputs():
             )
             st.session_state.baPWV_peak_value = baPWV_value
 
-    # st.session_state.sex = sex
-    # st.session_state.age = age
-    # st.session_state.height_cm = height_cm
-    # st.session_state.weight_kg = weight_kg
-    # st.session_state.sleep_hours = sleep_hours
-    # st.session_state.treated = treated
-    # # st.session_state.grip_strength = grip_strength
-    # # st.session_state.systolic_bp = systolic_bp
-    # # st.session_state.diastolic_bp = diastolic_bp
-    # # st.session_state.vo2_value = vo2_value
-    # # st.session_state.cimt_value = cimt_value
-    # # st.session_state.wr_peak_value = wr_peak_value
-    # st.session_state.momo_value = momo
-    # st.session_state.kidscreen_value = momo
-    # st.session_state.bapwv_peak_value = momo
+        if age >=14:
+            cimt_value = st.number_input(
+                "cIMT",
+                min_value=0.001,
+                max_value=2.0,
+                value=float(st.session_state.cimt_value),
+                step=0.001,
+                format="%.3f",
+                key="input_cimt"
+            )
+            st.session_state.cimt_value = cimt_value
+            
     
+    
+    with col3:
+        
+        grip_strength = st.number_input(
+            "Grip Strength",
+            min_value=4.0,
+            max_value=300.0,
+            value=float(st.session_state.grip_strength),
+            step=1.0,
+            key="grip strength"
+        )
+        st.session_state.grip_strength_value = grip_strength
+    
+        momo = st.number_input(
+            "Standing long jump",
+            min_value=10.0,
+            # max_value=100.0, 
+            value=float(st.session_state.momo),
+            step=0.1,
+            key="input_momo"
+        )
+        st.session_state.momo_value = momo
+
+
+        vo2_value = st.number_input(
+            "VO2peak/kg",
+            min_value=0.1,
+            max_value=100.0,
+            value=float(st.session_state.vo2_value),
+            step=0.1,
+            key="input_vo2"
+        )
+        st.session_state.vo2_value = vo2_value
+
+
+        wr_peak_value = st.number_input(
+            "WRpeak/kg",
+            min_value=3.0,
+            max_value=6.0,
+            value=float(st.session_state.wr_peak_value),
+            step=0.01,
+            format="%.2f",
+            key="input_wr_peak"
+        )
+        st.session_state.wr_peak_value = wr_peak_value
+
+
+    
+    with col4:
+    
+        if age <=13:
+            paq_c = st.number_input(
+                "PAQ_C score",
+                min_value=0.0,
+                max_value=100.0, 
+                value=float(st.session_state.paq_c),
+                step=0.1,
+                key="input_paq_c"
+            )
+            st.session_state.paq_c = paq_c
+            st.session_state.score['Körperliche Aktivität'] = paq_c
+
+        if age >13:
+            paq_a = st.number_input(
+                "PAQ_A score",
+                min_value=0.0,
+                max_value=100.0, 
+                value=float(st.session_state.paq_a),
+                step=0.1,
+                key="input_paq_a"
+            )
+            st.session_state.paq_a = paq_a
+            st.session_state.score['Körperliche Aktivität'] = paq_a
+
+        pdq = st.number_input(
+                "PDQ score",
+                min_value=0.0,
+                max_value=100.0, 
+                value=float(st.session_state.pdq),
+                step=0.1,
+                key="input_pdq"
+            )
+        st.session_state.pdq = pdq
+        st.session_state.score['Ernährung'] = pdq
+
+        smoking = st.number_input(
+            "Smoking score",
+            min_value=0.0,
+            max_value=100.0, 
+            value=float(st.session_state.smoking),
+            step=0.1,
+            key="input_smoking"
+        )
+        st.session_state.smoking = smoking
+        st.session_state.score['Nikotin'] = smoking
+
+
+        sleep_hours = st.number_input(
+            "Sleep hours",
+            min_value=0.0,
+            max_value=24.0,
+            value=float(st.session_state.sleep_hours),
+            step=0.1,
+            key="input_sleep"
+        )
+        st.session_state.sleep_hours = sleep_hours
+
+        kid_screen = st.number_input(
+            "KIDSCREEN",
+            min_value=10.0,
+            max_value=100.0, 
+            value=float(st.session_state.kidscreen_value),
+            step=0.1,
+            key="input_kidScreen"
+        )
+        st.session_state.kidscreen_value = kid_screen
+
 
     st.success("Measurements saved to session state.")
 
@@ -229,9 +301,9 @@ def render_sleep_score(refs):
 
     json_file = refs['sleep_json']#"bp.json"
 
-    st.header("Sleep Score")
+    st.header("Sleep")
 
-    if st.button("Calculate Sleep Score", key="sleep_btn"):
+    if st.button("Calculate Score", key="sleep_btn"):
         try:
             result = get_sleep_score_json(
                 json_file=json_file,
@@ -266,9 +338,9 @@ def render_bp_score(refs):
     # path = refs['BMI']
     json_file = refs['bp_json']#"bp.json"
 
-    st.header("BP Score")
+    st.header("BP")
 
-    if st.button("Calculate BP Score", key="bp_btn"):
+    if st.button("Calculate Score", key="bp_btn"):
         try:
             result = score_bp_from_json(
                 json_file=json_file,
@@ -305,12 +377,12 @@ def render_bp_score(refs):
 
 
 def render_bmi_score(refs):
-    st.header("BMI Score")
+    st.header("BMI")
     # bmi_df = pd.read_csv("bmi.csv")
     path = refs['BMI']
     bmi_df = pd.read_csv(path)
 
-    if st.button("Calculate BMI Score", key="bmi_btn"):
+    if st.button("Calculate Score", key="bmi_btn"):
         try:
             result = score_bmi_from_df(
                 bmi_df=bmi_df,
@@ -356,9 +428,9 @@ def render_bmi_score(refs):
 
 
 def render_vo2_score(refs):
-    st.header("VO2_Peak_kg Percentile")
+    st.header("VO2peak/kg")
 
-    if st.button("Calculate VO2 Percentile", key="vo2_btn"):
+    if st.button("Calculate Percentile", key="vo2_btn"):
         try:
             result = score_measurement(
                 metric="vo2",
@@ -387,10 +459,10 @@ def render_vo2_score(refs):
 
 
 
-def render_cimt_score(refs):
-    st.header("cIMT Percentile")
+def __render_cimt_score(refs):
+    st.header("cIMT")
 
-    if st.button("Calculate cIMT Percentile", key="cimt_btn"):
+    if st.button("Calculate Percentile", key="cimt_btn"):
         try:
             result = score_measurement(
                 metric="cimt",
@@ -463,11 +535,122 @@ def render_cimt_score(refs):
    
 
 
+import streamlit as st
+
+def render_cimt_score(refs):
+    st.header("cIMT")
+
+    if st.button("Calculate Percentile", key="cimt_btn"):
+        try:
+            result = score_measurement(
+                metric="cimt",
+                sex=st.session_state.sex,
+                observed_value=st.session_state.cimt_value,
+                age=st.session_state.age,
+                height=st.session_state.height_cm,
+                refs=refs,
+            )
+
+            if not result.get("possible", False):
+                st.warning(result.get("message", "cIMT scoring not possible."))
+                return
+
+            percentile_label = result.get("percentile_label", "NA")
+            percentile_numeric = result.get("percentile_numeric", None)
+
+            st.markdown(
+                f"""
+                <div style="text-align:center;">
+                    <h3>cIMT Percentile</h3>
+                    <h2 style="color:green; font-size:50px;">{percentile_label}</h2>
+                    <h4>Percentile: {"NA" if percentile_numeric is None else f"{percentile_numeric:.1f}"}</h4>
+                </div>
+                """,
+                unsafe_allow_html=True,
+            )
+
+            with st.expander("Summary", expanded=False):
+                st.write(f"**Observed cIMT:** {result['observed_value']}")
+                st.write(f"**Sex:** {result['sex']}")
+                st.write(f"**Age input:** {result['age_input']}")
+                st.write(f"**Age used:** {result['age_used']}")
+                st.write(f"**Height input:** {result['height_input']}")
+                st.write(f"**Height reference mode:** {result['height_reference_mode']}")
+
+                ref_cutpoints = result.get("reference_cutpoints", {})
+                if ref_cutpoints:
+                    st.write("**Reference cutpoints:**")
+                    for k, v in ref_cutpoints.items():
+                        st.write(f"- {k}: {v:.5f}")
+
+
+
+            # if not result.get("possible", False):
+            #     st.warning(result.get("message", "cIMT scoring not possible."))
+            #     return
+
+            # percentile_label = result.get("percentile_label", "NA")
+            # percentile_numeric = result.get("percentile_numeric", None)
+
+            # st.markdown(
+            #     f"""
+            #     <div style="text-align:center;">
+            #         <h3>cIMT Percentile</h3>
+            #         <h2 style="color:green; font-size:50px;">{percentile_label}</h2>
+            #         <h4>Observed cIMT: {result['observed_value']}</h4>
+            #         <h4>Sex: {result['sex']}</h4>
+            #         <h4>Age used: {result['age_used']}</h4>
+            #         <h4>Height input: {result['height_input']}</h4>
+            #     </div>
+            #     """,
+            #     unsafe_allow_html=True,
+            # )
+
+            # if percentile_numeric is not None:
+            #     st.info(f"Interpolated percentile: {percentile_numeric:.1f}")
+
+            # if "scores" not in st.session_state:
+            #     st.session_state["scores"] = {}
+
+            # st.session_state["scores"]["cimt"] = {
+            #     "percentile_label": result["percentile_label"],
+            #     "percentile_numeric": result["percentile_numeric"],
+            #     "observed_value": result["observed_value"],
+            #     "age_input": result["age_input"],
+            #     "age_used": result["age_used"],
+            #     "height_input": result["height_input"],
+            # }
+
+            # c1, c2 = st.columns([2, 0.1])
+
+            # with c1:
+            #     st.subheader("Summary")
+
+            #     with st.expander("cIMT details", expanded=False):
+            #         st.write(f"**Percentile label:** {result['percentile_label']}")
+            #         st.write(f"**Observed value:** {result['observed_value']}")
+            #         st.write(f"**Sex:** {result['sex']}")
+            #         st.write(f"**Age input:** {result['age_input']}")
+            #         st.write(f"**Age used:** {result['age_used']}")
+            #         st.write(f"**Height input:** {result['height_input']}")
+            #         st.write(f"**Height reference mode:** {result['height_reference_mode']}")
+
+            #         if result["percentile_numeric"] is not None:
+            #             st.write(f"**Percentile numeric:** {result['percentile_numeric']:.1f}")
+
+            #     with st.expander("Reference cutpoints", expanded=False):
+            #         ref_cutpoints = result.get("reference_cutpoints", {})
+            #         for k, v in ref_cutpoints.items():
+            #             st.write(f"**{k}:** {v:.5f}")
+
+        except Exception as e:
+            st.error(f"Error calculating cIMT percentile: {e}")
+
 
 def render_wrPeak_score(refs):
-    st.header("WR Peak/kg Percentile")
+    st.header("WRpeak/kg")
 
-    if st.button("Calculate WR Peak Percentile", key="wrpeak_btn"):
+    if st.button("Calculate Percentile", key="wrpeak_btn"):
         try:
             result = score_measurement(
                 metric="wr_peak",
@@ -519,9 +702,9 @@ def render_wrPeak_score(refs):
 
 
 def render_baPWV_score(refs):
-    st.header("baPWV Peak Percentile")
+    st.header("baPWV")
 
-    if st.button("Calculate baPWV Peak Percentile", key="bapwvpeak_btn"):
+    if st.button("Calculate Percentile", key="bapwvpeak_btn"):
         try:
             result = score_measurement(
                 metric="baPWV_peak",
@@ -556,9 +739,9 @@ def render_baPWV_score(refs):
 
 
 def render_momo_score(refs):
-    st.header("MOMO Percentile")
+    st.header("Standing long jump")
 
-    if st.button("Calculate MOMO Percentile", key="momo_btn"):
+    if st.button("Calculate Percentile", key="momo_btn"):
         try:
             result = score_measurement(
                 metric="momo",
@@ -591,9 +774,9 @@ def render_momo_score(refs):
             st.error(f"Error calculating MOMO percentile: {e}")
 
 def render_gripStrength_score(refs):
-    st.header("Grip Strength Percentile")
+    st.header("Grip Strength")
 
-    if st.button("Calculate Grip Strength Percentile", key="gripstrength_btn"):
+    if st.button("Calculate Percentile", key="gripstrength_btn"):
         try:
             
             result = score_measurement(
@@ -630,9 +813,9 @@ def render_gripStrength_score(refs):
 
 
 def render_KidScreen_score(refs):
-    st.header("KidScreen Score")
+    st.header("KIDSCREEN")
 
-    if st.button("Calculate KidScreen Score", key="kidscreen_btn"):
+    if st.button("Calculate Percentile", key="kidscreen_btn"):
         try:
             result = score_measurement(
                 metric="kidScreen",
@@ -668,221 +851,478 @@ def render_KidScreen_score(refs):
 
 
 
-import plotly.graph_objects as go
-import plotly.express as px
-import streamlit as st
+
+def _render_star_plot(score_dict):
+    plot_scores = {}
+
+    if "Blutzucker" in score_dict:
+        plot_scores["Blutzucker"] = float(score_dict["Blutzucker"])
+
+    if "Blutfette" in score_dict:
+        plot_scores["Blutfette"] = float(score_dict["Blutfette"])
+
+    if "bmi_score" in score_dict:
+        plot_scores["BMI"] = float(score_dict["bmi_score"])
+
+    if "bp_score" in score_dict:
+        plot_scores["Blutdruck"] = float(score_dict["bp_score"])
+
+    if "Körperliche Aktivität" in score_dict:
+        plot_scores["Körperliche Aktivität"] = float(score_dict["Körperliche Aktivität"])
+
+    if "Ernährung" in score_dict:
+        plot_scores["Ernährung"] = float(score_dict["Ernährung"])
+
+    if "sleep_score" in score_dict:
+        plot_scores["Schlaf"] = float(score_dict["sleep_score"])
+
+    if "Nikotin" in score_dict:
+        plot_scores["Nikotin"] = float(score_dict["Nikotin"])
+
+    if not plot_scores:
+        st.warning("No scores available for spider chart.")
+        return
+
+    categories = list(plot_scores.keys())
+    values = [max(0, min(100, v)) for v in plot_scores.values()]
+    mean_score = sum(values) / len(values)
+
+    categories_closed = categories + [categories[0]]
+    values_closed = values + [values[0]]
+
+    fig = go.Figure()
+
+    # main spider / radar polygon only
+    fig.add_trace(go.Scatterpolar(
+        r=values_closed,
+        theta=categories_closed,
+        mode="lines+markers",
+        fill="toself",
+        line=dict(color="rgb(0,82,20)", width=3),
+        marker=dict(
+            size=10,
+            color=values,
+            colorscale="RdYlGn",
+            cmin=0,
+            cmax=100,
+            line=dict(color="black", width=1.2)
+        ),
+        fillcolor="rgba(70, 160, 90, 0.28)",
+        hovertemplate="%{theta}: %{r:.1f}<extra></extra>",
+        showlegend=False
+    ))
+
+    # optional outer frame
+    fig.add_trace(go.Scatterpolar(
+        r=[100] * len(categories_closed),
+        theta=categories_closed,
+        mode="lines",
+        line=dict(color="rgba(0,0,0,0.18)", width=1.5, dash="dot"),
+        hoverinfo="skip",
+        showlegend=False
+    ))
+
+    # center white circle + average
+    fig.add_shape(
+        type="circle",
+        xref="paper",
+        yref="paper",
+        x0=0.435,
+        y0=0.435,
+        x1=0.565,
+        y1=0.565,
+        line=dict(color="rgba(0,0,0,0.18)", width=1.5),
+        fillcolor="white",
+        layer="above"
+    )
+
+    fig.add_annotation(
+        x=0.5,
+        y=0.5,
+        xref="paper",
+        yref="paper",
+        text=f"<b>{mean_score:.0f}</b><br><span style='font-size:12px'>GESAMTSCORE</span>",
+        showarrow=False,
+        align="center",
+        font=dict(color="rgb(0,51,102)", size=18),
+        xanchor="center",
+        yanchor="middle"
+    )
+
+    fig.update_layout(
+        title=dict(
+            text="SPIDERWEB CHART",
+            x=0.5,
+            xanchor="center",
+            font=dict(size=20, color="rgb(10,30,50)")
+        ),
+        polar=dict(
+            bgcolor="white",
+            gridshape="linear",
+            radialaxis=dict(
+                visible=True,
+                range=[0, 100],
+                tickvals=[20, 40, 60, 80, 100],
+                tickfont=dict(size=12, color="black"),
+                gridcolor="rgba(0,0,0,0.10)",
+                gridwidth=1,
+                linecolor="rgba(0,0,0,0.15)",
+                angle=90
+            ),
+            angularaxis=dict(
+                tickfont=dict(size=15, color="black"),
+                gridcolor="rgba(0,0,0,0.14)",
+                linecolor="rgba(0,0,0,0.18)",
+                rotation=90,
+                direction="clockwise"
+            )
+        ),
+        showlegend=False,
+        paper_bgcolor="white",
+        plot_bgcolor="white",
+        height=800,
+        margin=dict(l=80, r=80, t=100, b=80)
+    )
+
+    st.plotly_chart(fig, use_container_width=True)
+
 
 def render_star_plot(score_dict):
     plot_scores = {}
 
-    if "sleep_score" in score_dict:
-        plot_scores["Sleep"] = score_dict["sleep_score"]
-
-    if "bp_score" in score_dict:
-        plot_scores["Blood Pressure"] = score_dict["bp_score"]
+    
+    if "Blutzucker" in score_dict:
+        plot_scores["Blutzucker"] = float(score_dict["Blutzucker"]) #float(100 - z_to_percentile(score_dict["Blutzucker"]))
+        
+    if "Blutfette" in score_dict:
+        plot_scores["Blutfette"] = float(score_dict["Blutfette"]) #float(z_to_percentile(score_dict["wr_score"]))
 
     if "bmi_score" in score_dict:
-        plot_scores["BMI"] = score_dict["bmi_score"]
+        plot_scores["BMI"] = float(score_dict["bmi_score"])
 
-    if "vo2_score" in score_dict:
-        # st.write('vo2', score_dict["vo2_score"])
-        plot_scores["VO2 Peak"] = z_to_percentile(score_dict["vo2_score"])
+    if "bp_score" in score_dict:
+        plot_scores["Blutdruck"] = float(score_dict["bp_score"])
 
-    if "wr_score" in score_dict:
-        plot_scores["WR Peak/kg"] = z_to_percentile(score_dict["wr_score"])
+    if "Körperliche Aktivität" in score_dict:
+        plot_scores["Körperliche Aktivität"] = float(score_dict["Körperliche Aktivität"])
 
-    if "cimt_score" in score_dict:
-        plot_scores["cIMT"] = 100 - z_to_percentile(score_dict["cimt_score"])
+    if "Ernährung" in score_dict:
+        plot_scores["Ernährung"] = float(score_dict["Ernährung"])
+    
+    if "sleep_score" in score_dict:
+        plot_scores["Schlaf"] = float(score_dict["sleep_score"])
 
-    if "kidscreen_score" in score_dict:
-        plot_scores["KIDSCREEN"] = score_dict["kidscreen_score"]
-
-    # if "grip_score" in score_dict:
-    #     plot_scores["Grip Strength"] = z_to_percentile(score_dict["grip_score"])
-
-    if "momo_score" in score_dict:
-        plot_scores["MoMo"] = score_dict["momo_score"]
-
-    if "bapwv_score" in score_dict:
-        plot_scores["baPWV"] = score_dict["bapwv_score"]
+    if "Nikotin" in score_dict:
+        plot_scores["Nikotin"] = float(score_dict["Nikotin"])
 
     if not plot_scores:
-        st.warning("No scores available for star plot.")
+        st.warning("No scores available for spider chart.")
         return
 
+    st.write(plot_scores)
     categories = list(plot_scores.keys())
-    values = list(plot_scores.values())
+    values = [max(0, min(100, v)) for v in plot_scores.values()]
+    mean_score = sum(values) / len(values)
 
-    col1, col2 = st.columns([1.5, 2], gap = 'xsmall', border = False)
-    with col1:
-        # ---------- Combined CVH mean bar ----------
-        mean_score = sum(values) / len(values)
-
-        # 0 = bad (red), 100 = good (green)
-        bar_color = px.colors.sample_colorscale(
-            "RdYlGn",
-            [mean_score / 100.0]
-        )[0]
-
-        fig_bar = go.Figure()
-
-        fig_bar.add_trace(go.Bar(
-            x=[mean_score],
-            y=["Combined CVH Score"],
-            orientation="h",
-            text=[f"{mean_score:.1f}"],
-            textposition="inside",
-            insidetextanchor="middle",
-            marker=dict(
-                color=[bar_color],
-                line=dict(color="white", width=1.5)
-            ),
-            hovertemplate="Mean score: %{x:.1f}<extra></extra>"
-        ))
-
-        fig_bar.update_layout(
-            title="Combined Cardiovascular Health Score",
-            title_font=dict(color="white"),
-            font=dict(color="orange"),
-            xaxis=dict(
-                title="Score",
-                range=[0, 100],
-                tickfont=dict(color="orange"),
-                title_font=dict(color="orange")
-            ),
-            yaxis=dict(
-                tickfont=dict(color="orange")
-            ),
-            plot_bgcolor="rgba(0,0,0,0)",
-            paper_bgcolor="rgba(0,0,0,0)",
-            height=180,
-            showlegend=False,
-            margin=dict(l=40, r=40, t=60, b=40)
-        )
-
-        st.plotly_chart(fig_bar, use_container_width=True)
-        st.caption(f"Combined CVH score = mean of {len(values)} "
-                       f"available elements in score_dict: {mean_score:.1f}/100")
-
-        with st.expander("CVH score", expanded=True):
-            st.write(st.session_state.score)
-        
-    with col2: 
-
-        # ---------- Star plot ----------
-        radar_categories = categories + [categories[0]]
-        radar_values = values + [values[0]]
-
-        fig_star = go.Figure()
-
-        fig_star.add_trace(go.Scatterpolar(
-            r=radar_values,
-            theta=radar_categories,
-            fill="toself",
-            name="Patient profile",
-            line=dict(color="lightgreen", width=3),
-            fillcolor="rgba(10, 107, 190, 0.25)"
-        ))
-
-        fig_star.update_layout(
-            polar=dict(
-                radialaxis=dict(
-                    visible=True,
-                    range=[0, 100],
-                    tickfont=dict(color="orange")
-                ),
-                angularaxis=dict(
-                    tickfont=dict(color="orange")
-                )
-            ),
-            showlegend=False,
-            title="Cardiovascular Health Star Plot",
-            title_font=dict(color="white"),
-            font=dict(color="orange"),
-            height=600
-        )
-
-        st.plotly_chart(fig_star, use_container_width=True)
-
-
-
-
-
-def ___render_star_plot(score_dict):
-    plot_scores = {}
-
-    if "sleep_score" in score_dict:
-        plot_scores["Sleep"] = score_dict["sleep_score"]
-
-    if "bp_score" in score_dict:
-        plot_scores["Blood Pressure"] = score_dict["bp_score"]
-
-    if "bmi_score" in score_dict:
-        plot_scores["BMI"] = score_dict["bmi_score"]
-
-    if "vo2_score" in score_dict:
-        plot_scores["VO2 Peak"] = z_to_percentile(score_dict["vo2_score"])
-
-    if "wr_score" in score_dict:
-        plot_scores["WR Peak/kg"] = z_to_percentile(score_dict["wr_score"])
-
-    if "cimt_score" in score_dict:
-        plot_scores["cIMT"] = 100 - z_to_percentile(score_dict["cimt_score"])
-
-    if "kidscreen_score" in score_dict:
-        plot_scores["kidscreen_score"] = score_dict["kidscreen_score"]
-
-    if "kidscreen_score" in score_dict:
-        plot_scores["kidscreen_score"] = score_dict["kidscreen_score"]
-
-    if "grip_score" in score_dict:
-        plot_scores["grip_score"] = score_dict["grip_score"]
-
-    if "momo_score" in score_dict:
-        plot_scores["momo_score"] = score_dict["momo_score"]
-
-    if 'bapwv_score' in score_dict:
-        plot_scores['bapwv_score'] = score_dict['bapwv_score']
-
-
-
-    categories = list(plot_scores.keys())
-    values = list(plot_scores.values())
-
-    if not categories:
-        st.warning("No scores available for star plot.")
-        return
-
-    categories += [categories[0]]
-    values += [values[0]]
+    categories_closed = categories + [categories[0]]
+    values_closed = values + [values[0]]
 
     fig = go.Figure()
 
+    def interp_color(v):
+        v = max(0.0, min(100.0, float(v)))
+
+        if v <= 50:
+            t = v / 50.0
+            r = 220 + (255 - 220) * t
+            g = 20 + (140 - 20) * t
+            b = 60 + (0 - 60) * t
+        else:
+            t = (v - 50) / 50.0
+            r = 255 + (46 - 255) * t
+            g = 140 + (204 - 140) * t
+            b = 0 + (113 - 0) * t
+
+        return f"rgba({int(r)}, {int(g)}, {int(b)}, 0.95)"
+
+    # many thin rings for smooth gradient
+    gradient_levels = np.linspace(1000, 10, 800)
+
+    for level in gradient_levels:
+        fig.add_trace(go.Scatterpolar(
+            r=[level] * len(categories_closed),
+            theta=categories_closed,
+            fill="toself",
+            fillcolor=interp_color(level),
+            line=dict(color="rgba(0,0,0,0)"),
+            hoverinfo="skip",
+            showlegend=False
+        ))
+
+    # faded outer/background overlay
     fig.add_trace(go.Scatterpolar(
-        r=values,
-        theta=categories,
-        fill="toself",
-        name="Patient profile",
-        line=dict(color="lightgreen", width=3),
-        fillcolor="rgba(10, 107, 190, 0.25)"
+        r=[100] * len(categories_closed),
+        theta=categories_closed,
+        # fill="toself",
+        fill="none",
+        fillcolor="rgba(255,255,255,0.90)",
+        line=dict(color="rgba(0,0,0,0)"),
+        hoverinfo="skip",
+        showlegend=False
     ))
 
+    # vivid spider area
+    fig.add_trace(go.Scatterpolar(
+        r=values_closed,
+        theta=categories_closed,
+        mode="lines+markers",
+        fill="toself",
+        line=dict(color="white", width=2),
+        marker=dict(size=5, color="rgb(0,82,20)"),
+        fillcolor="rgba(102,178,255,0.22)",
+        hovertemplate="%{theta}: %{r:.1f}<extra></extra>",
+        showlegend=False, 
+        # layer = 'above'
+    ))
+
+    # central total average score
+    fig.add_shape(
+        type="circle",
+        xref="paper",
+        yref="paper",
+        x0=0.45,
+        y0=0.45,
+        x1=0.55,
+        y1=0.55,
+        line=dict(color="white", width=0.5),
+        # fillcolor="white",
+        # layer="above", 
+        layer="below"
+    )
+
+    fig.add_annotation(
+        x=0.5,
+        y=0.5,
+        xref="paper",
+        yref="paper",
+        text=f"<b style='font-size:20px'>{mean_score:.0f}</b><br><span style='font-size:12px'>GESAMTSCORE</span>",
+        showarrow=False,
+        align="center",
+        font=dict(color="rgb(255,255,255)"),
+        xanchor="center",
+        yanchor="middle"
+    )
+
     fig.update_layout(
+        title=dict(
+            text="CVH CHART",
+            x=0.5,
+            xanchor="center",
+            font=dict(size=20, color="rgb(10,30,50)")
+        ),
         polar=dict(
+            bgcolor="white",
             radialaxis=dict(
                 visible=True,
                 range=[0, 100],
-                tickfont=dict(color="orange")
+                tickvals=[20, 40, 60, 80, 100],
+                tickfont=dict(size=12, color="black"),
+                gridcolor="rgba(255,255,255,0.92)",
+                gridwidth=1,
+                # showline=False,
+                angle=90
             ),
             angularaxis=dict(
-                tickfont=dict(color="orange")
+                tickfont=dict(size=16, color="black"),
+                gridcolor="rgba(0,0,0,0.35)",
+                linecolor="rgba(0,0,0,0.35)",
+                rotation=90,
+                direction="clockwise",
+                showline=False,
             )
         ),
         showlegend=False,
-        title="Cardiovascular Health Star Plot",
-        title_font=dict(color="white"),
-        font=dict(color="orange"),
-        height=600
+        paper_bgcolor="white",
+        plot_bgcolor="white",
+        height=900,
+        # margin=dict(l=80, r=80, t=120, b=80)
     )
 
     st.plotly_chart(fig, use_container_width=True)
+
+ 
+
+import numpy as np
+import plotly.graph_objects as go
+from plotly.subplots import make_subplots
+import streamlit as st
+   
+
+
+
+import math
+import numpy as np
+import matplotlib.pyplot as plt
+import matplotlib as mpl
+import seaborn as sns
+import streamlit as st
+
+
+
+
+import numpy as np
+import matplotlib.pyplot as plt
+import matplotlib as mpl
+import seaborn as sns
+import streamlit as st
+
+
+def render_score_bars_gradient(score_dict):
+    plot_scores = {}
+
+    if "Blutzucker" in score_dict:
+        plot_scores["Blutzucker"] = float(score_dict["Blutzucker"])
+
+    if "Blutfette" in score_dict:
+        plot_scores["Blutfette"] = float(score_dict["Blutfette"])
+
+    if "bmi_score" in score_dict:
+        plot_scores["BMI"] = float(score_dict["bmi_score"])
+
+    if "bp_score" in score_dict:
+        plot_scores["Blutdruck"] = float(score_dict["bp_score"])
+
+    if "Körperliche Aktivität" in score_dict:
+        plot_scores["Körperliche Aktivität"] = float(score_dict["Körperliche Aktivität"])
+
+    if "Ernährung" in score_dict:
+        plot_scores["Ernährung"] = float(score_dict["Ernährung"])
+
+    if "sleep_score" in score_dict:
+        plot_scores["Schlaf"] = float(score_dict["sleep_score"])
+
+    if "Nikotin" in score_dict:
+        plot_scores["Nikotin"] = float(score_dict["Nikotin"])
+
+    if not plot_scores:
+        st.warning("No scores available for bar chart.")
+        return
+
+    categories = list(plot_scores.keys())
+    values = [max(0, min(100, float(v))) for v in plot_scores.values()]
+
+    sns.set_style("whitegrid")
+
+    cmap = mpl.colors.LinearSegmentedColormap.from_list(
+        "score_map",
+        ["#d73027", "#fee08b", "#1a9850"]
+    )
+
+    fig, axes = plt.subplots(
+        nrows=2,
+        ncols=4,
+        figsize=(18, 7),
+        sharex=True
+    )
+
+    axes_flat = axes.flatten()
+
+    for ax, cat, val in zip(axes_flat, categories, values):
+        grad = np.linspace(0, 1, 600).reshape(1, -1)
+
+        ax.imshow(
+            grad,
+            extent=[0, 100, -0.22, 0.22],
+            aspect="auto",
+            cmap=cmap,
+            interpolation="bicubic",
+            zorder=1
+        )
+
+        border = plt.Rectangle(
+            (0, -0.22), 100, 0.44,
+            fill=False,
+            edgecolor="lightgray",
+            linewidth=1.0,
+            zorder=2
+        )
+        ax.add_patch(border)
+
+        ax.axvline(
+            val,
+            ymin=0.32,
+            ymax=0.68,
+            color="black",
+            linewidth=3,
+            zorder=3
+        )
+
+        ax.scatter(
+            val, 0,
+            s=35,
+            color="white",
+            edgecolor="black",
+            linewidth=1,
+            zorder=4
+        )
+
+        # x_text = min(max(val, 6), 94)
+        x_text = val
+        ax.text(
+            x_text,
+            0.33,
+            f"{val:.1f}",
+            ha="center",
+            va="bottom",
+            fontsize=18,
+            fontweight="bold",
+            color="black",
+            bbox=dict(
+                boxstyle="round,pad=0.2",
+                fc="white",
+                ec="none",
+                alpha=0.95
+            ),
+            zorder=10
+        )
+
+        ax.annotate(
+            f"{val:.1f}",
+            xy=(val, 0.22),
+            xytext=(x_text, 0.40),
+            ha="center",
+            va="bottom",
+            fontsize=10,
+            fontweight="bold",
+            color="black",
+            bbox=dict(
+                boxstyle="round,pad=0.2",
+                fc="white",
+                ec="none",
+                alpha=0.95
+            ),
+            arrowprops=dict(
+                arrowstyle="-",
+                color="black",
+                lw=1.0
+            ),
+            zorder=5
+        )
+
+        ax.set_title(cat, fontsize=12, fontweight="bold", pad=10)
+        ax.set_xlim(0, 100)
+        ax.set_ylim(-0.6, 0.6)
+        ax.set_yticks([])
+        ax.set_xticks([0, 25, 50, 75, 100])
+        ax.tick_params(axis="x", labelsize=9)
+
+        for spine in ["top", "right", "left"]:
+            ax.spines[spine].set_visible(False)
+
+    for ax in axes_flat[len(categories):]:
+        ax.axis("off")
+
+    fig.suptitle("CVH Score Overview", fontsize=18, fontweight="bold", y=1.02)
+    fig.tight_layout()
+
+    st.pyplot(fig)
