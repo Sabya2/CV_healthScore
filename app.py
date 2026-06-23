@@ -8,11 +8,11 @@ from features_utils import (
     render_sleep_score,
     render_bp_score,
     render_bmi_score,
-    render_vo2_score,
-    render_cimt_score,
-    render_wrPeak_score, 
-    render_baPWV_score,
-    render_KidScreen_score,
+    render_vo2_Percentile,
+    render_cimt_Percentile,
+    render_wrPeak_percentile, 
+    render_baPWV_percentile,
+    render_KidScreen_percentile,
     render_momo_score,
     render_gripStrength_score,
     render_score_bars_gradient, 
@@ -56,11 +56,10 @@ def render_scores(refs: dict):
     row1_col1, row1_col2, row1_col3 = st.columns(3, gap = 'xsmall', border = True)
     with row1_col1:
         render_bp_score(refs)
-        # render_sleep_score(refs)
     with row1_col2:
-        render_baPWV_score(refs)
+        render_baPWV_percentile(refs)
     with row1_col3:
-        render_cimt_score(refs)
+        render_cimt_Percentile(refs)
 
     row2_col1, row2_col2, row2_col3 = st.columns(3, gap = 'xsmall', border = True)
     with row2_col1:
@@ -68,24 +67,24 @@ def render_scores(refs: dict):
     with row2_col2:
         render_momo_score(refs)
     with row2_col3:
-        render_vo2_score(refs)
+        render_vo2_Percentile(refs)
 
     row3_col1, row3_col2, row3_col3, row3_col4  = st.columns(4, gap = 'xsmall', border = True)
     with row3_col1:
-        render_wrPeak_score(refs)
+        render_wrPeak_percentile(refs)
     with row3_col2:
         render_bmi_score(refs)
     with row3_col3:
         render_sleep_score(refs)
     with row3_col4:
-        render_KidScreen_score(refs)
+        render_KidScreen_percentile(refs)
 
    
 
 
 def main():
     st.set_page_config(page_title="Health Score Demo", layout="wide")
-    st.title("Cardiac Health Score")
+    st.title("Cardiovascular Health Score")
 
     if "score" not in st.session_state:
         st.session_state.score = {}

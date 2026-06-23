@@ -31,7 +31,7 @@ def init_measurement_state():
         "treated": False,
         "vo2_value": 45.0,
         "wr_peak_value": 3.20,
-        "baPWV_peak_value":3.0,
+        "baPWV_peak_value":842.0,
         "cimt_value": 0.50,
         "momo": 10.0, 
         "kidscreen_value":10.0, 
@@ -145,8 +145,8 @@ def render_measurement_inputs():
         if age >=12:
             baPWV_value = st.number_input(
                 "baPWV",
-                min_value=0.0,
-                max_value=60.0,
+                min_value=800.0,
+                max_value=1500.0,
                 value=float(st.session_state.baPWV_peak_value),
                 step=0.01,
                 format="%.2f",
@@ -157,7 +157,7 @@ def render_measurement_inputs():
         if age >=14:
             cimt_value = st.number_input(
                 "cIMT",
-                min_value=0.001,
+                min_value=0.49,
                 max_value=2.0,
                 value=float(st.session_state.cimt_value),
                 step=0.001,
@@ -313,12 +313,14 @@ def render_sleep_score(refs):
             )
 
             st.markdown(
-                f"<h3 style='text-align:center; color:green;'>Sleep Score: {result['score']}</h1>",
+                f"<h3 style='text-align:center; color:green;'>{result['score']}</h1>",
+                # f"<h3 style='text-align:center; color:green;'>Sleep Score: {result['score']}</h1>",
+
                 unsafe_allow_html=True
             )
             st.session_state.score['sleep_score'] = result['score']
 
-            with st.expander("Show matched reference rows", expanded=False):
+            with st.expander("Reference Row", expanded=False):
                 st.write(f"**Age group:** {result['age_group']}")
                 st.write(f"**Mean (h):** {result['mean_h']}")
                 st.write(f"**SD (h):** {result['sd_h']}")
@@ -353,13 +355,14 @@ def render_bp_score(refs):
             )
             st.session_state.score['bp_score'] = result['score']
             st.markdown(
-                f"<h3 style='text-align:center; color:green;'>BP Score: {result['score']}</h1>",
+                f"<h3 style='text-align:center; color:green;'>{result['score']}</h1>",
+                # f"<h3 style='text-align:center; color:green;'>BP Score: {result['score']}</h1>",
                 unsafe_allow_html=True
             )
 
             
 
-            with st.expander("Show matched reference rows", expanded=False):
+            with st.expander("Reference Row", expanded=False):
                 st.subheader("Component Scores")
                 st.write(f"**Systolic score:** {result['component_scores']['systolic_score']}")
                 st.write(f"**Diastolic score:** {result['component_scores']['diastolic_score']}")
@@ -378,7 +381,6 @@ def render_bp_score(refs):
 
 def render_bmi_score(refs):
     st.header("BMI")
-    # bmi_df = pd.read_csv("bmi.csv")
     path = refs['BMI']
     bmi_df = pd.read_csv(path)
 
@@ -403,12 +405,13 @@ def render_bmi_score(refs):
                 color = "red"
 
             st.markdown(
-                f"<h3 style='text-align:center; color:green;'>BMI Score: {score}</h1>",
+                f"<h3 style='text-align:center; color:green;'{score}</h1>",
+                # f"<h3 style='text-align:center; color:green;'>BMI Score: {score}</h1>",
                 unsafe_allow_html=True
             )
 
             
-            with st.expander("Show matched reference rows", expanded=False):
+            with st.expander("Reference Row", expanded=False):
                 st.write(f"**BMI:** {bmi_value}")
                 st.write(f"**Month used:** {result['reference_row']['Month']}")
                 st.write(f"**-3SD:** {result['reference_row']['-3SD']}")
@@ -427,7 +430,7 @@ def render_bmi_score(refs):
 
 
 
-def render_vo2_score(refs):
+def render_vo2_Percentile(refs):
     st.header("VO2peak/kg")
 
     if st.button("Calculate Percentile", key="vo2_btn"):
@@ -441,7 +444,8 @@ def render_vo2_score(refs):
             )
             st.session_state.score['vo2_score'] = result['z_score']
             st.markdown(
-                f"<h3 style='text-align:center; color:green;'>VO2 Percentile: {result['percentile_label']}</h1>",
+                f"<h3 style='text-align:center; color:green;'>{result['percentile']:.2f} % </h1>",
+                # f"<h3 style='text-align:center; color:green;'>VO2 Percentile: {result['percentile_label']}</h1>",
                 unsafe_allow_html=True
             )
 
@@ -459,85 +463,7 @@ def render_vo2_score(refs):
 
 
 
-def __render_cimt_score(refs):
-    st.header("cIMT")
-
-    if st.button("Calculate Percentile", key="cimt_btn"):
-        try:
-            result = score_measurement(
-                metric="cimt",
-                sex=st.session_state.sex,
-                observed_value=st.session_state.cimt_value,
-                age=st.session_state.age,
-                height=st.session_state.height_cm,
-                refs = refs,
-            )
-
-            age_based = result.get("age_based")
-            height_based = result.get("height_based")
-
-
-            with st.expander("Age based score", expanded=False):
-                if age_based:
-                    st.markdown(
-                        f"""
-                        <div style="text-align:center;">
-                            <h3>CIMT Percentile by Age</h3>
-                            <h3 style="color:green; font-size:50px;">{age_based['percentile_label']}</h3>
-                            <h4>Percentile: {age_based['percentile']:.2f}</h4>
-                            <h4>Z-score: {age_based['z_score']:.3f}</h4>
-                        </div>
-                        """,
-                        unsafe_allow_html=True
-                    )
-
-            with st.expander("height based score", expanded=False):
-                if height_based:
-                    st.markdown(
-                        f"""
-                        <div style="text-align:center;">
-                            <h3>CIMT Percentile by Age</h3>
-                            <h3 style="color:green; font-size:50px;">{height_based['percentile_label']}</h3>
-                            <h4>Percentile: {height_based['percentile']:.2f}</h4>
-                            <h4>Z-score: {height_based['z_score']:.3f}</h4>
-
-
-                        </div>
-                        """,
-                        unsafe_allow_html=True
-                    )
-            st.write("score or percentile to be sent for age or height?")
-            st.session_state.score['cimt_score'] = age_based['z_score']
-
-            # st.session_state.scores["cimt"] = {
-            #                         "z_score": age_based["z_score"],
-            #                         "percentile": age_based["percentile"],
-            #                         "percentile_label": age_based["percentile_label"],
-            #                         "observed_value": age_based["observed_value"],
-            #                     }
-
-            c1, c2 = st.columns([2,0.1])
-            with c1:
-                st.subheader("Summary")
-                with st.expander("Age based", expanded=False):
-                    st.write(f"**Age-based percentile:** {age_based['percentile']:.2f}")
-                    st.write(f"**Age-based label:** {age_based['percentile_label']}")
-                    st.write(f"**Age-based z-score:** {age_based['z_score']:.3f}")
-                with st.expander("height based", expanded=False):
-                    st.write(f"**Height-based percentile:** {height_based['percentile']:.2f}")
-                    st.write(f"**Height-based label:** {height_based['percentile_label']}")
-                    st.write(f"**Height-based z-score:** {height_based['z_score']:.3f}")
-
-        
-
-        except Exception as e:
-            st.error(f"Error calculating cIMT percentile: {e}")
-   
-
-
-import streamlit as st
-
-def render_cimt_score(refs):
+def render_cimt_Percentile(refs):
     st.header("cIMT")
 
     if st.button("Calculate Percentile", key="cimt_btn"):
@@ -556,18 +482,30 @@ def render_cimt_score(refs):
                 return
 
             percentile_label = result.get("percentile_label", "NA")
-            percentile_numeric = result.get("percentile_numeric", None)
+            percentile_numeric = result.get("percentile_numeric", "NA")
+            # display = "NA" if percentile_numeric is None else f"{percentile_numeric:.1f}
 
             st.markdown(
-                f"""
-                <div style="text-align:center;">
-                    <h3>cIMT Percentile</h3>
-                    <h2 style="color:green; font-size:50px;">{percentile_label}</h2>
-                    <h4>Percentile: {"NA" if percentile_numeric is None else f"{percentile_numeric:.1f}"}</h4>
-                </div>
-                """,
+                f"<h3 style='text-align:center; color:green;'>{percentile_numeric} % </h1>",
+                # f"""
+                # <div style="text-align:center;">
+
+                #     <h3 style="color:green; font-size:50px;>{"NA" if percentile_numeric is None else f"{percentile_numeric:.1f}"}></h1>
+                # </div>
+                # """,
                 unsafe_allow_html=True,
             )
+
+            # st.markdown(
+            #     f"""
+            #     <div style="text-align:center;">
+            #         <h3>cIMT Percentile</h3>
+            #         <h2 style="color:green; font-size:50px;">{percentile_label}</h2>
+            #         <h4>Percentile: {"NA" if percentile_numeric is None else f"{percentile_numeric:.1f}"}</h4>
+            #     </div>
+            #     """,
+            #     unsafe_allow_html=True,
+            # )
 
             with st.expander("Summary", expanded=False):
                 st.write(f"**Observed cIMT:** {result['observed_value']}")
@@ -584,70 +522,11 @@ def render_cimt_score(refs):
                         st.write(f"- {k}: {v:.5f}")
 
 
-
-            # if not result.get("possible", False):
-            #     st.warning(result.get("message", "cIMT scoring not possible."))
-            #     return
-
-            # percentile_label = result.get("percentile_label", "NA")
-            # percentile_numeric = result.get("percentile_numeric", None)
-
-            # st.markdown(
-            #     f"""
-            #     <div style="text-align:center;">
-            #         <h3>cIMT Percentile</h3>
-            #         <h2 style="color:green; font-size:50px;">{percentile_label}</h2>
-            #         <h4>Observed cIMT: {result['observed_value']}</h4>
-            #         <h4>Sex: {result['sex']}</h4>
-            #         <h4>Age used: {result['age_used']}</h4>
-            #         <h4>Height input: {result['height_input']}</h4>
-            #     </div>
-            #     """,
-            #     unsafe_allow_html=True,
-            # )
-
-            # if percentile_numeric is not None:
-            #     st.info(f"Interpolated percentile: {percentile_numeric:.1f}")
-
-            # if "scores" not in st.session_state:
-            #     st.session_state["scores"] = {}
-
-            # st.session_state["scores"]["cimt"] = {
-            #     "percentile_label": result["percentile_label"],
-            #     "percentile_numeric": result["percentile_numeric"],
-            #     "observed_value": result["observed_value"],
-            #     "age_input": result["age_input"],
-            #     "age_used": result["age_used"],
-            #     "height_input": result["height_input"],
-            # }
-
-            # c1, c2 = st.columns([2, 0.1])
-
-            # with c1:
-            #     st.subheader("Summary")
-
-            #     with st.expander("cIMT details", expanded=False):
-            #         st.write(f"**Percentile label:** {result['percentile_label']}")
-            #         st.write(f"**Observed value:** {result['observed_value']}")
-            #         st.write(f"**Sex:** {result['sex']}")
-            #         st.write(f"**Age input:** {result['age_input']}")
-            #         st.write(f"**Age used:** {result['age_used']}")
-            #         st.write(f"**Height input:** {result['height_input']}")
-            #         st.write(f"**Height reference mode:** {result['height_reference_mode']}")
-
-            #         if result["percentile_numeric"] is not None:
-            #             st.write(f"**Percentile numeric:** {result['percentile_numeric']:.1f}")
-
-            #     with st.expander("Reference cutpoints", expanded=False):
-            #         ref_cutpoints = result.get("reference_cutpoints", {})
-            #         for k, v in ref_cutpoints.items():
-            #             st.write(f"**{k}:** {v:.5f}")
-
         except Exception as e:
             st.error(f"Error calculating cIMT percentile: {e}")
 
 
-def render_wrPeak_score(refs):
+def render_wrPeak_percentile(refs):
     st.header("WRpeak/kg")
 
     if st.button("Calculate Percentile", key="wrpeak_btn"):
@@ -659,37 +538,18 @@ def render_wrPeak_score(refs):
                 age=st.session_state.age,
                 refs=refs,
             )
-            st.write("score or percentile to be sent ?")
-            # st.session_state.score['wr_score'] = result['z_score']
-
-            # st.session_state.scores["wr_peak"] = {
-            #     "z_score": result["z_score"],
-            #     "percentile": result["percentile"],
-            #     "percentile_label": result["percentile_label"],
-            #     "observed_value": result["observed_value"],
-            #     "age": result["x_value"],
-            #     "sex": result["sex"],
-            # }
-
-            # st.markdown(
-            #     f"""
-            #     <div style="text-align:center;">
-            #         <h3>WR Peak/kg Percentile</h3>
-            #         <h1 style="color:green; font-size:80px;">{result['percentile_label']}</h1>
-            #         <h4>Percentile: {result['percentile']:.2f}</h4>
-            #         <h4>Z-score: {result['z_score']:.3f}</h4>
-            #     </div>
-            #     """,
-            #     unsafe_allow_html=True
-            # )
             st.markdown(
-                f"<h3 style='text-align:center; color:green;'>WR Peak Percentile: {result['percentile_label']} {result['percentile']:.2f}</h1>",
+                f"<h3 style='text-align:center; color:green;'>{result['percentile']:.2f} % </h1>",
                 unsafe_allow_html=True
             )
+       
+            # st.markdown(
+            #     f"<h3 style='text-align:center; color:green;'>{result['percentile_label']} {result['percentile']:.2f}</h1>",
+            #     unsafe_allow_html=True
+            # )
             st.session_state.score['wr_score'] = result['z_score']
 
-
-            with st.expander("Reference", expanded=False):
+            with st.expander("Reference Row", expanded=False):
                 st.write(f"Percentile: {result['percentile']:.2f}")
                 st.write(f"Z-score: {result['z_score']:.3f}")
                 st.write(f"**L:** {result['L']}")
@@ -701,7 +561,7 @@ def render_wrPeak_score(refs):
             st.error(f"Error calculating WR Peak percentile: {e}")
 
 
-def render_baPWV_score(refs):
+def render_baPWV_percentile(refs):
     st.header("baPWV")
 
     if st.button("Calculate Percentile", key="bapwvpeak_btn"):
@@ -719,14 +579,14 @@ def render_baPWV_score(refs):
                 return
 
             st.markdown(
-                f"<h3 style='text-align:center; color:green;'>baPWV Peak Percentile: {result['percentile_label']} {result['percentile']:.2f}</h3>",
+                f"<h3 style='text-align:center; color:green;'>{result['percentile']:.2f} % </h3>",
                 unsafe_allow_html=True
             )
 
             st.session_state.score['bapwv_score'] = result['z_score']
 
-            with st.expander("Reference", expanded=False):
-                st.write(f"Percentile: {result['percentile']:.2f}")
+            with st.expander("Reference Row", expanded=False):
+                st.write(f"Percentile: {result['percentile']:.2f}, {result['percentile_label']}")
                 st.write(f"Z-score: {result['z_score']:.3f}")
                 st.write(f"**L:** {result['L']}")
                 st.write(f"**M:** {result['M']}")
@@ -756,13 +616,13 @@ def render_momo_score(refs):
                 return
 
             st.markdown(
-                f"<h3 style='text-align:center; color:green;'>MOMO Percentile: {result['percentile_label']}</h3>",
+                f"<h3 style='text-align:center; color:green;'>{result['percentile_label']} % </h3>",
                 unsafe_allow_html=True
             )
 
             st.session_state.score["momo_score"] = result["z_score_label"]
 
-            with st.expander("Reference", expanded=False):
+            with st.expander("Reference row", expanded=False):
                 st.write(f"Observed value: {result['observed_value']:.2f}")
                 st.write(f"Matched age: {result['age_used']}")
                 st.write(f"Reference SW: {result['reference_value']:.2f}")
@@ -793,18 +653,17 @@ def render_gripStrength_score(refs):
                 return
 
             st.markdown(
-                f"<h3 style='text-align:center; color:green;'>Grip Strength Percentile: {result['percentile_label']}</h3>",
+                f"<h3 style='text-align:center; color:green;'>{result['percentile_label']} % </h3>",
                 unsafe_allow_html=True
             )
 
             st.session_state.score["grip_score"] = result["percentile_label"]
 
-            with st.expander("Reference", expanded=False):
+            with st.expander("Reference Row", expanded=False):
                 st.write(f"Observed grip strength: {result['observed_value']:.2f} kg")
                 st.write(f"Matched age: {result['age_used']}")
                 st.write(f"Reference grip strength: {result['reference_value']:.2f} kg")
-                st.write(f"Percentile rank: {result['percentile_label']}")
-                st.write(f"Source table: {result['source_table']}")
+                st.write(f"Percentile: {result['percentile_label']}")
                 st.write(f"Reference type: {result['reference_type']}")
 
         except Exception as e:
@@ -812,7 +671,7 @@ def render_gripStrength_score(refs):
 
 
 
-def render_KidScreen_score(refs):
+def render_KidScreen_percentile(refs):
     st.header("KIDSCREEN")
 
     if st.button("Calculate Percentile", key="kidscreen_btn"):
@@ -830,14 +689,14 @@ def render_KidScreen_score(refs):
                 return
 
             st.markdown(
-                f"<h3 style='text-align:center; color:green;'>KidScreen 0-100 Score: {result['score_0_100']:.2f}</h3>",
+                f"<h3 style='text-align:center; color:green;'>{result['score_0_100']:.2f}</h3>",
                 unsafe_allow_html=True
             )
 
             st.session_state.score["kidscreen_score"] = result["score_0_100"]
             
 
-            with st.expander("Reference", expanded=False):
+            with st.expander("Reference Row", expanded=False):
                 st.write(f"Observed raw score: {result['observed_value']:.2f}")
                 st.write(f"Raw score used: {result['raw_score']}")
                 st.write(f"Age group: {result['age_group']}")

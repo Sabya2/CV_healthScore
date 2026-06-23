@@ -708,6 +708,9 @@ def score_baPWV_peak(sex: str, observed_value: float, age: float, refs: dict) ->
 
 def score_grip_strength(sex: str, observed_value: float, age: float, refs: dict) -> dict:
     ref_df = pd.read_csv(refs["grip_strength"])
+    ref_df["Percentile rank"] = (ref_df["Percentile rank"] 
+                                 .str.replace("%", "", regex=False) 
+                                 )
 
     sex_map = {
         "male": "Boys",
@@ -730,7 +733,6 @@ def score_grip_strength(sex: str, observed_value: float, age: float, refs: dict)
         (ref_df["Sex"] == ref_sex) &
         (ref_df["Age"] == age_int)
     ].copy()
-    # print(subset)
 
     if subset.empty:
         return {
@@ -956,7 +958,6 @@ def score_measurement(
         )
     
     if metric == "grip_strength":
-        print("before grip")
         return score_grip_strength(
             sex=sex,
             observed_value=observed_value,
